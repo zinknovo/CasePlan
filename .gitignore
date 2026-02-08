@@ -8,13 +8,22 @@ Desktop.ini
 # Editors / IDEs
 .vscode/
 .idea/
+.ai/
 *.swp
 *.swo
 
 # Logs
 *.log
 
-# Local secrets / environment
+# Maven
+target/
+
+# Process / temporary docs (do not track)
+docker-images-summary.md
+*-summary.md
+
+# Local secrets / environment (never commit real keys)
 .env
 .env.*
+!.env.example
 

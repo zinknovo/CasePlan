@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Case Plan Generator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
+        h1 { margin-bottom: 24px; font-size: 24px; }
+        h2 { margin: 32px 0 16px; font-size: 20px; }
+
+        /* Form */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .form-grid .full { grid-column: 1 / -1; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #555; }
+        input, textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        textarea { resize: vertical; min-height: 100px; }
+        input:focus, textarea:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
+        button { padding: 10px 24px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+        button:hover { background: #1d4ed8; }
+        button:disabled { background: #93c5fd; cursor: not-allowed; }
+
+        /* Cards */
+        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .card-header h3 { font-size: 16px; }
+        .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .badge.completed { background: #dcfce7; color: #166534; }
+        .badge.failed { background: #fee2e2; color: #991b1b; }
+        .badge.pending, .badge.processing { background: #fef9c3; color: #854d0e; }
+        .plan-content { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6; max-height: 400px; overflow-y: auto; }
+        .meta { font-size: 12px; color: #888; margin-top: 8px; }
+        .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
+        .download-btn { padding: 4px 12px; background: #059669; color: #fff; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; margin-left: 8px; }
+        .download-btn:hover { background: #047857; }
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #93c5fd; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .empty { text-align: center; color: #999; padding: 40px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚖️ Legal Service Plan Generator</h1>
+
+    <!-- Form -->
+    <div class="form-grid" id="form">
+        <div>
+            <label>Client First Name *</label>
+            <input id="clientFirstName" placeholder="Jane">
+        </div>
+        <div>
+            <label>Client Last Name *</label>
+            <input id="clientLastName" placeholder="Doe">
+        </div>
+        <div>
+            <label>Referring Attorney *</label>
+            <input id="referringAttorney" placeholder="John Smith">
+        </div>
+        <div>
+            <label>Bar Number *</label>
+            <input id="barNumber" placeholder="1234567890">
+        </div>
+        <div>
+            <label>Case Number *</label>
+            <input id="caseNumber" placeholder="100001">
+        </div>
+        <div>
+            <label>Primary Cause of Action *</label>
+            <input id="primaryCauseOfAction" placeholder="Labor Dispute">
+        </div>
+        <div class="full">
+            <label>Legal Remedy Sought *</label>
+            <input id="legalRemedySought" placeholder="Compensation for wrongful termination">
+        </div>
+        <div>
+            <label>Additional Causes (comma-separated)</label>
+            <input id="additionalCauses" placeholder="Breach of Contract, Discrimination">
+        </div>
+        <div>
+            <label>Prior Legal Actions (comma-separated)</label>
+            <input id="priorLegalActions" placeholder="Filed complaint with labor board">
+        </div>
+        <div class="full">
+            <label>Case Documents / Notes</label>
+            <textarea id="caseDocuments" rows="4" placeholder="Paste case notes, evidence summaries, or relevant details here..."></textarea>
+        </div>
+        <div class="full" style="text-align: right;">
+            <button id="submitBtn" onclick="submit()">Generate Case Plan</button>
+        </div>
+    </div>
+
+    <!-- List -->
+    <h2>Generated Plans</h2>
+    <div id="planList"><div class="empty">No case plans yet. Submit the form above to generate one.</div></div>
+</div>
+
+<script>
+    const API = '/api/caseplans';
+    const fields = [
+        'clientFirstName','clientLastName','referringAttorney','barNumber',
+        'caseNumber','primaryCauseOfAction','legalRemedySought',
+        'additionalCauses','priorLegalActions','caseDocuments'
+    ];
+
+    async function submit() {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span>Generating...';
+
+        const body = {};
+        fields.forEach(f => { body[f] = document.getElementById(f).value; });
+
+        try {
+            const res = await fetch(API, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error('Server error: ' + res.status);
+            // Clear form
+            fields.forEach(f => { document.getElementById(f).value = ''; });
+            loadPlans();
+        } catch (e) {
+            alert('Error: ' + e.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Generate Case Plan';
+        }
+    }
+
+    async function loadPlans() {
+        try {
+            const res = await fetch(API);
+            const plans = await res.json();
+            const container = document.getElementById('planList');
+
+            if (plans.length === 0) {
+                container.innerHTML = '<div class="empty">No case plans yet.</div>';
+                return;
+            }
+
+            container.innerHTML = plans.map(p => `
+                <div class="card">
+                    <div class="card-header">
+                        <h3>${p.clientFirstName} ${p.clientLastName} — Case #${p.caseNumber}</h3>
+                        <div>
+                            <span class="badge ${p.status}">${p.status}</span>
+                            ${p.status === 'completed' ? `<button class="download-btn" onclick="download(${p.id})">⬇ Download</button>` : ''}
+                        </div>
+                    </div>
+                    <div style="font-size:13px;color:#666;margin-bottom:8px;">
+                        ${p.primaryCauseOfAction} · Atty: ${p.referringAttorney} (${p.barNumber})
+                    </div>
+                    ${p.status === 'completed' ? `<div class="plan-content">${escapeHtml(p.generatedPlan)}</div>` : ''}
+                    ${p.status === 'failed' ? `<div class="error-msg">Error: ${escapeHtml(p.errorMessage || 'Unknown error')}</div>` : ''}
+                    <div class="meta">Created: ${new Date(p.createdAt).toLocaleString()}</div>
+                </div>
+            `).join('');
+        } catch (e) {
+            console.error('Failed to load plans:', e);
+        }
+    }
+
+    function download(id) {
+        fetch(API + '/' + id)
+            .then(r => r.json())
+            .then(p => {
+                const blob = new Blob([p.generatedPlan], { type: 'text/markdown' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `caseplan_${p.caseNumber}_${p.clientLastName}.md`;
+                a.click();
+            });
+    }
+
+    function escapeHtml(s) {
+        if (!s) return '';
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    // Load on page open
+    loadPlans();
+</script>
+</body>
+</html>
