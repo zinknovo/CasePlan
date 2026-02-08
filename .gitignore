@@ -1,0 +1,20 @@
+# OS / filesystem junk
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Local secrets / environment
+.env
+.env.*
+
