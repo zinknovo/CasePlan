@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/caseplan_db}
-    username: ${SPRING_DATASOURCE_USERNAME:caseplan}
-    password: ${SPRING_DATASOURCE_PASSWORD:caseplan123}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/dev_db}
+    username: ${SPRING_DATASOURCE_USERNAME:dev_xh}
+    password: ${SPRING_DATASOURCE_PASSWORD:dev_xh}
   jpa:
     hibernate:
       ddl-auto: update
@@ -10,6 +10,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  redis:
+    host: ${SPRING_REDIS_HOST:localhost}
+    port: 6379
 
 deepseek:
   api-key: ${DEEPSEEK_API_KEY:}

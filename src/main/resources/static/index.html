@@ -30,7 +30,13 @@
         .badge.completed { background: #dcfce7; color: #166534; }
         .badge.failed { background: #fee2e2; color: #991b1b; }
         .badge.pending, .badge.processing { background: #fef9c3; color: #854d0e; }
-        .plan-content { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; white-space: pre-wrap; font-size: 14px; line-height: 1.6; max-height: 400px; overflow-y: auto; }
+        .plan-content { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; font-size: 14px; line-height: 1.6; max-height: 400px; overflow-y: auto; }
+    .plan-content h1, .plan-content h2, .plan-content h3 { margin-top: 16px; margin-bottom: 8px; }
+    .plan-content h1 { font-size: 20px; } .plan-content h2 { font-size: 17px; } .plan-content h3 { font-size: 15px; }
+    .plan-content p { margin-bottom: 8px; }
+    .plan-content ul, .plan-content ol { margin: 8px 0; padding-left: 24px; }
+    .plan-content li { margin-bottom: 4px; }
+    .plan-content strong { font-weight: 700; }
         .meta { font-size: 12px; color: #888; margin-top: 8px; }
         .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
         .download-btn { padding: 4px 12px; background: #059669; color: #fff; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; margin-left: 8px; }
@@ -39,6 +45,7 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .empty { text-align: center; color: #999; padding: 40px; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -55,12 +62,16 @@
             <input id="clientLastName" placeholder="Doe">
         </div>
         <div>
-            <label>Referring Attorney *</label>
+            <label>Attorney Name *</label>
             <input id="referringAttorney" placeholder="John Smith">
         </div>
         <div>
             <label>Bar Number *</label>
             <input id="barNumber" placeholder="1234567890">
+        </div>
+        <div>
+            <label>Referring Source</label>
+            <input id="referringSource" placeholder="Legal Aid Center, friend referral, etc.">
         </div>
         <div>
             <label>Case Number *</label>
@@ -100,7 +111,7 @@
     const API = '/api/caseplans';
     const fields = [
         'clientFirstName','clientLastName','referringAttorney','barNumber',
-        'caseNumber','primaryCauseOfAction','legalRemedySought',
+        'referringSource','caseNumber','primaryCauseOfAction','legalRemedySought',
         'additionalCauses','priorLegalActions','caseDocuments'
     ];
 
@@ -110,7 +121,7 @@
         btn.innerHTML = '<span class="spinner"></span>Generating...';
 
         const body = {};
-        fields.forEach(f => { body[f] = document.getElementById(f).value; });
+        fields.forEach(f => { body[f] = document.getElementById(f).value || ''; });
 
         try {
             const res = await fetch(API, {
@@ -141,23 +152,28 @@
                 return;
             }
 
-            container.innerHTML = plans.map(p => `
+            container.innerHTML = plans.map(p => {
+                const lc = p.caseInfo || {};
+                const client = lc.client || {};
+                const attorney = lc.attorney || {};
+                return `
                 <div class="card">
                     <div class="card-header">
-                        <h3>${p.clientFirstName} ${p.clientLastName} — Case #${p.caseNumber}</h3>
+                        <h3>${client.firstName || ''} ${client.lastName || ''} — Case #${lc.caseNumber || ''}</h3>
                         <div>
                             <span class="badge ${p.status}">${p.status}</span>
                             ${p.status === 'completed' ? `<button class="download-btn" onclick="download(${p.id})">⬇ Download</button>` : ''}
                         </div>
                     </div>
                     <div style="font-size:13px;color:#666;margin-bottom:8px;">
-                        ${p.primaryCauseOfAction} · Atty: ${p.referringAttorney} (${p.barNumber})
+                        ${lc.primaryCauseOfAction || ''} · Atty: ${attorney.name || ''} (${attorney.barNumber || ''})
                     </div>
-                    ${p.status === 'completed' ? `<div class="plan-content">${escapeHtml(p.generatedPlan)}</div>` : ''}
+                    ${p.status === 'completed' ? `<div class="plan-content">${marked.parse(p.generatedPlan || '')}</div>` : ''}
                     ${p.status === 'failed' ? `<div class="error-msg">Error: ${escapeHtml(p.errorMessage || 'Unknown error')}</div>` : ''}
                     <div class="meta">Created: ${new Date(p.createdAt).toLocaleString()}</div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
         } catch (e) {
             console.error('Failed to load plans:', e);
         }
@@ -167,10 +183,12 @@
         fetch(API + '/' + id)
             .then(r => r.json())
             .then(p => {
+                const lc = p.caseInfo || {};
+                const client = lc.client || {};
                 const blob = new Blob([p.generatedPlan], { type: 'text/markdown' });
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
-                a.download = `caseplan_${p.caseNumber}_${p.clientLastName}.md`;
+                a.download = `caseplan_${lc.caseNumber || 'unknown'}_${client.lastName || 'unknown'}.md`;
                 a.click();
             });
     }

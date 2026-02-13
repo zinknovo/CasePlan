@@ -21,6 +21,7 @@ target/
 # Process / temporary docs (do not track)
 docker-images-summary.md
 *-summary.md
+notes.md
 
 # Local secrets / environment (never commit real keys)
 .env
