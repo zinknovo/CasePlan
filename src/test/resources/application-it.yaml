@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: ${IT_SPRING_DATASOURCE_URL:${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/dev_db}}
+    username: ${IT_SPRING_DATASOURCE_USERNAME:${SPRING_DATASOURCE_USERNAME:dev_xh}}
+    password: ${IT_SPRING_DATASOURCE_PASSWORD:${SPRING_DATASOURCE_PASSWORD:dev_xh}}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  redis:
+    host: ${IT_SPRING_REDIS_HOST:${SPRING_REDIS_HOST:localhost}}
+    port: ${IT_SPRING_REDIS_PORT:${SPRING_REDIS_PORT:6379}}
+    database: ${IT_SPRING_REDIS_DATABASE:15}
+
+llm:
+  provider: ${LLM_PROVIDER:openai}

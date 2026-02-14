@@ -5,8 +5,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
 
 @Getter
 @Setter
@@ -28,9 +26,7 @@ public class CreateCasePlanRequest {
 
     private String referringSource;
 
-    @NotBlank(message = "Case number is required")
-    @Size(min = 6, max = 6, message = "Case number must be 6 digits")
-    @Pattern(regexp = "\\d{6}", message = "Case number must be 6 digits")
+    // Optional at intake stage; many new cases do not have an assigned case number yet.
     private String caseNumber;
 
     @NotBlank(message = "Primary cause of action is required")

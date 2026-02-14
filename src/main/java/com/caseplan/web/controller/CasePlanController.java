@@ -177,7 +177,7 @@ public class CasePlanController {
         CaseInfo caseInfo = new CaseInfo();
         caseInfo.setClient(client);
         caseInfo.setAttorney(attorney);
-        caseInfo.setCaseNumber(request.getCaseNumber());
+        caseInfo.setCaseNumber(normalizeOptional(request.getCaseNumber()));
         caseInfo.setPrimaryCauseOfAction(request.getPrimaryCauseOfAction());
         caseInfo.setOpposingParty(request.getOpposingParty());
         caseInfo.setLegalRemedySought(request.getLegalRemedySought());
@@ -206,5 +206,13 @@ public class CasePlanController {
         }
 
         return ResponseEntity.status(HttpStatus.CREATED).body(casePlan);
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

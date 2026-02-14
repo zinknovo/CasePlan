@@ -31,10 +31,22 @@ public class CasePlanConsumer {
     private static final long REDIS_ERROR_BACKOFF_MS = 5000L;
     /** Stale recovery: processing records older than this are re-queued on startup. */
     private static final long STALE_PROCESSING_MINUTES = 10L;
+    /** Reconcile DB pending records back to queue to recover from queue loss/crash. */
+    private static final long PENDING_RECONCILE_INTERVAL_SECONDS = 60L;
 
     @PostConstruct
     public void startWorker() {
         recoverStaleProcessing();
+        recoverLostPendingQueueItems();
+        Thread reconcileWorker = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                runReconcileLoop();
+            }
+        }, "caseplan-reconcile");
+        reconcileWorker.setDaemon(false);
+        reconcileWorker.start();
+
         Thread worker = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -57,6 +69,28 @@ public class CasePlanConsumer {
       }
     }
 
+    /** DB->Queue reconciliation: ensure pending records exist in Redis queue. */
+    private void recoverLostPendingQueueItems() {
+        List<CasePlan> pending = casePlanRepo.findByStatus("pending");
+        if (pending.isEmpty()) {
+            return;
+        }
+
+        List<String> queued = redisTemplate.opsForList().range(QUEUE_KEY, 0, -1);
+        Set<String> queuedIds = queued != null ? new HashSet<>(queued) : new HashSet<>();
+        for (CasePlan plan : pending) {
+            if (plan.getId() == null) {
+                continue;
+            }
+            String idStr = plan.getId().toString();
+            if (queuedIds.contains(idStr)) {
+                continue;
+            }
+            redisTemplate.opsForList().rightPush(QUEUE_KEY, idStr);
+            queuedIds.add(idStr);
+        }
+    }
+
     /** Blocking loop: BLPOP until a task id is available, then process with retry. */
     private void runWorker() {
         while (true) {
@@ -77,6 +111,26 @@ public class CasePlanConsumer {
         }
     }
 
+    /** Periodic safety net for Redis data loss: requeue pending records every minute. */
+    private void runReconcileLoop() {
+        while (true) {
+            try {
+                recoverLostPendingQueueItems();
+                Thread.sleep(TimeUnit.SECONDS.toMillis(PENDING_RECONCILE_INTERVAL_SECONDS));
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                break;
+            } catch (Exception e) {
+                try {
+                    Thread.sleep(REDIS_ERROR_BACKOFF_MS);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+    }
+
     /** Process one task: up to 3 attempts with exponential backoff (1s, 2s before 2nd and 3rd). */
     private void processWithRetry(String idStr) {
         Long id = Long.parseLong(idStr);
@@ -86,6 +140,9 @@ public class CasePlanConsumer {
         }
 
         CasePlan casePlan = optional.get();
+        if (!"pending".equals(casePlan.getStatus())) {
+            return;
+        }
         casePlan.setStatus("processing");
         casePlanRepo.save(casePlan);
 
@@ -136,6 +193,10 @@ public class CasePlanConsumer {
         String additionalCauses = Optional.ofNullable(caseInfo.getAdditionalCauses()).orElse("None");
         String priorLegalActions = Optional.ofNullable(caseInfo.getPriorLegalActions()).orElse("None");
         String caseDocuments = Optional.ofNullable(caseInfo.getCaseDocuments()).orElse("None provided");
+        String caseNumber = Optional.ofNullable(caseInfo.getCaseNumber())
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .orElse("Not assigned yet");
 
         String promptStr =
                 "You are a legal assistant. Generate a Legal Service Plan based on the following case information.\n\n"
@@ -148,7 +209,7 @@ public class CasePlanConsumer {
                         + "--- Case Information ---\n"
                         + "Client Name: " + client.getFirstName() + " " + client.getLastName() + "\n"
                         + "Referring Attorney: " + attorney.getName() + " (Bar #: " + attorney.getBarNumber() + ")\n"
-                        + "Case Number: " + caseInfo.getCaseNumber() + "\n"
+                        + "Case Number: " + caseNumber + "\n"
                         + "Primary Cause of Action: " + caseInfo.getPrimaryCauseOfAction() + "\n"
                         + "Legal Remedy Sought: " + caseInfo.getLegalRemedySought() + "\n"
                         + "Additional Causes: " + additionalCauses + "\n"

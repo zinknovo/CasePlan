@@ -3,203 +3,572 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Legal Case Plan Generator</title>
+    <title>Case Plan Workspace</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; padding: 24px; }
-        h1 { margin-bottom: 24px; font-size: 24px; }
-        h2 { margin: 32px 0 16px; font-size: 20px; }
-
-        /* Form */
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .form-grid .full { grid-column: 1 / -1; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #555; }
-        input, textarea { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-        textarea { resize: vertical; min-height: 100px; }
-        input:focus, textarea:focus { outline: none; border-color: #4a90d9; box-shadow: 0 0 0 2px rgba(74,144,217,0.2); }
-        button { padding: 10px 24px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
-        button:hover { background: #1d4ed8; }
-        button:disabled { background: #93c5fd; cursor: not-allowed; }
-
-        /* Cards */
-        .card { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .card-header h3 { font-size: 16px; }
-        .badge { padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
-        .badge.completed { background: #dcfce7; color: #166534; }
-        .badge.failed { background: #fee2e2; color: #991b1b; }
-        .badge.pending, .badge.processing { background: #fef9c3; color: #854d0e; }
-        .plan-content { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px; font-size: 14px; line-height: 1.6; max-height: 400px; overflow-y: auto; }
-    .plan-content h1, .plan-content h2, .plan-content h3 { margin-top: 16px; margin-bottom: 8px; }
-    .plan-content h1 { font-size: 20px; } .plan-content h2 { font-size: 17px; } .plan-content h3 { font-size: 15px; }
-    .plan-content p { margin-bottom: 8px; }
-    .plan-content ul, .plan-content ol { margin: 8px 0; padding-left: 24px; }
-    .plan-content li { margin-bottom: 4px; }
-    .plan-content strong { font-weight: 700; }
-        .meta { font-size: 12px; color: #888; margin-top: 8px; }
-        .error-msg { color: #dc2626; font-size: 13px; margin-top: 8px; }
-        .download-btn { padding: 4px 12px; background: #059669; color: #fff; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; margin-left: 8px; }
-        .download-btn:hover { background: #047857; }
-        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #93c5fd; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.6s linear infinite; margin-right: 8px; vertical-align: middle; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .empty { text-align: center; color: #999; padding: 40px; }
+        :root {
+            --bg: #f4f4f4;
+            --surface: #ffffff;
+            --border: #d7d7d7;
+            --text: #171717;
+            --muted: #666666;
+            --primary: #222222;
+            --primary-hover: #000000;
+            --danger: #222222;
+            --danger-bg: #efefef;
+            --success: #1f1f1f;
+            --success-bg: #ececec;
+            --warn: #3a3a3a;
+            --warn-bg: #f1f1f1;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .page {
+            max-width: 1180px;
+            margin: 24px auto;
+            padding: 0 16px 24px;
+        }
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 1px 1px rgba(16, 24, 32, 0.03);
+        }
+        .panel + .panel {
+            margin-top: 16px;
+        }
+        .panel-title {
+            margin: 0 0 14px;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .form-grid .full {
+            grid-column: 1 / -1;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--muted);
+        }
+        input, textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 9px 10px;
+            font-size: 14px;
+            color: var(--text);
+            background: #fff;
+        }
+        textarea {
+            min-height: 96px;
+            resize: vertical;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #9a9a9a;
+            box-shadow: 0 0 0 2px rgba(30, 30, 30, 0.12);
+        }
+        .toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .btn {
+            border: 1px solid transparent;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--primary);
+            color: #fff;
+        }
+        .btn:hover {
+            background: var(--primary-hover);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #fff;
+            color: var(--text);
+            border-color: var(--border);
+        }
+        .btn-secondary:hover {
+            background: #f2f2f2;
+        }
+        .btn-danger {
+            background: #fff;
+            color: var(--danger);
+            border-color: #d9b8b8;
+        }
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .msg {
+            margin: 0 0 10px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid;
+            font-size: 13px;
+        }
+        .msg.error {
+            background: var(--danger-bg);
+            border-color: #e8c4c4;
+            color: var(--danger);
+        }
+        .msg.info {
+            background: #f1f1f1;
+            border-color: #d5d5d5;
+            color: #2f2f2f;
+        }
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 980px;
+            background: #fff;
+        }
+        thead {
+            background: #f8fafb;
+        }
+        th, td {
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            padding: 10px 12px;
+            vertical-align: top;
+            font-size: 13px;
+        }
+        th {
+            color: var(--muted);
+            font-weight: 600;
+        }
+        tr:last-child td {
+            border-bottom: 0;
+        }
+        .status {
+            display: inline-block;
+            border-radius: 999px;
+            padding: 2px 9px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+        .status.pending, .status.processing {
+            color: #4a4a4a;
+            background: #f3f3f3;
+        }
+        .status.completed {
+            color: #242424;
+            background: #e9e9e9;
+        }
+        .status.failed {
+            color: #1f1f1f;
+            background: #e2e2e2;
+        }
+        .row-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .empty {
+            text-align: center;
+            padding: 28px 10px;
+            color: var(--muted);
+            font-size: 13px;
+            border: 1px dashed var(--border);
+            border-radius: 8px;
+            background: #fff;
+        }
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(8, 12, 16, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 20;
+        }
+        .modal {
+            width: min(960px, 100%);
+            max-height: 88vh;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .modal-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .modal-body {
+            padding: 14px;
+            overflow: auto;
+            background: #fbfcfd;
+        }
+        .modal-body pre {
+            margin: 0;
+            font-family: "IBM Plex Mono", Menlo, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        @media (max-width: 860px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .top-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .toolbar {
+                width: 100%;
+                justify-content: flex-start;
+            }
+        }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
-<div class="container">
-    <h1>⚖️ Legal Service Plan Generator</h1>
+<div id="root"></div>
 
-    <!-- Form -->
-    <div class="form-grid" id="form">
-        <div>
-            <label>Client First Name *</label>
-            <input id="clientFirstName" placeholder="Jane">
-        </div>
-        <div>
-            <label>Client Last Name *</label>
-            <input id="clientLastName" placeholder="Doe">
-        </div>
-        <div>
-            <label>Attorney Name *</label>
-            <input id="attorneyName" placeholder="John Smith">
-        </div>
-        <div>
-            <label>Bar Number *</label>
-            <input id="barNumber" placeholder="1234567890">
-        </div>
-        <div>
-            <label>Referring Source</label>
-            <input id="referringSource" placeholder="Legal Aid Center, friend referral, etc.">
-        </div>
-        <div>
-            <label>Case Number *</label>
-            <input id="caseNumber" placeholder="100001">
-        </div>
-        <div>
-            <label>Primary Cause of Action *</label>
-            <input id="primaryCauseOfAction" placeholder="Labor Dispute">
-        </div>
-        <div class="full">
-            <label>Legal Remedy Sought *</label>
-            <input id="legalRemedySought" placeholder="Compensation for wrongful termination">
-        </div>
-        <div>
-            <label>Additional Causes (comma-separated)</label>
-            <input id="additionalCauses" placeholder="Breach of Contract, Discrimination">
-        </div>
-        <div>
-            <label>Prior Legal Actions (comma-separated)</label>
-            <input id="priorLegalActions" placeholder="Filed complaint with labor board">
-        </div>
-        <div class="full">
-            <label>Case Documents / Notes</label>
-            <textarea id="caseDocuments" rows="4" placeholder="Paste case notes, evidence summaries, or relevant details here..."></textarea>
-        </div>
-        <div class="full" style="text-align: right;">
-            <button id="submitBtn" onclick="submit()">Generate Case Plan</button>
-        </div>
-    </div>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
 
-    <!-- List -->
-    <h2>Generated Plans</h2>
-    <div id="planList"><div class="empty">No case plans yet. Submit the form above to generate one.</div></div>
-</div>
+    const API_BASE = "/api/caseplans";
+    const POLL_MS = 5000;
+    const EMPTY_FORM = {
+        clientFirstName: "",
+        clientLastName: "",
+        clientIdNumber: "",
+        attorneyName: "",
+        barNumber: "",
+        referringSource: "",
+        caseNumber: "",
+        primaryCauseOfAction: "",
+        opposingParty: "",
+        legalRemedySought: "",
+        additionalCauses: "",
+        priorLegalActions: "",
+        caseDocuments: ""
+    };
 
-<script>
-    const API = '/api/caseplans';
-    const fields = [
-        'clientFirstName','clientLastName','attorneyName','barNumber',
-        'referringSource','caseNumber','primaryCauseOfAction','legalRemedySought',
-        'additionalCauses','priorLegalActions','caseDocuments'
-    ];
+    function App() {
+        const [form, setForm] = useState(EMPTY_FORM);
+        const [plans, setPlans] = useState([]);
+        const [loading, setLoading] = useState(true);
+        const [submitting, setSubmitting] = useState(false);
+        const [error, setError] = useState("");
+        const [info, setInfo] = useState("");
+        const [modalPlan, setModalPlan] = useState(null);
+        const [viewing, setViewing] = useState(false);
 
-    async function submit() {
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span>Generating...';
-
-        const body = {};
-        fields.forEach(f => { body[f] = document.getElementById(f).value || ''; });
-
-        try {
-            const res = await fetch(API, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            if (!res.ok) throw new Error('Server error: ' + res.status);
-            // Clear form
-            fields.forEach(f => { document.getElementById(f).value = ''; });
-            loadPlans();
-        } catch (e) {
-            alert('Error: ' + e.message);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = 'Generate Case Plan';
+        async function fetchPlans(silent) {
+            if (!silent) {
+                setLoading(true);
+            }
+            try {
+                const res = await fetch(API_BASE);
+                if (!res.ok) {
+                    throw new Error("Failed to load plans (" + res.status + ")");
+                }
+                const data = await res.json();
+                setPlans(Array.isArray(data) ? data : []);
+                if (!silent) {
+                    setError("");
+                }
+            } catch (e) {
+                setError(e.message || "Failed to load plans");
+            } finally {
+                if (!silent) {
+                    setLoading(false);
+                }
+            }
         }
-    }
 
-    async function loadPlans() {
-        try {
-            const res = await fetch(API);
-            const plans = await res.json();
-            const container = document.getElementById('planList');
+        useEffect(() => {
+            fetchPlans(false);
+            const timer = setInterval(() => {
+                fetchPlans(true);
+            }, POLL_MS);
+            return () => clearInterval(timer);
+        }, []);
 
-            if (plans.length === 0) {
-                container.innerHTML = '<div class="empty">No case plans yet.</div>';
+        function updateField(key, value) {
+            setForm(prev => ({ ...prev, [key]: value }));
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            setSubmitting(true);
+            setError("");
+            setInfo("");
+            try {
+                const res = await fetch(API_BASE, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(form)
+                });
+                let payload = null;
+                try {
+                    payload = await res.json();
+                } catch (ignore) {
+                }
+                if (!res.ok) {
+                    const msg = payload && payload.message ? payload.message : ("Create failed (" + res.status + ")");
+                    throw new Error(msg);
+                }
+                setForm(EMPTY_FORM);
+                setInfo("Entry submitted. Status list will refresh automatically.");
+                await fetchPlans(true);
+            } catch (e) {
+                setError(e.message || "Submit failed");
+            } finally {
+                setSubmitting(false);
+            }
+        }
+
+        async function handleView(id) {
+            setViewing(true);
+            setError("");
+            try {
+                const res = await fetch(API_BASE + "/" + id);
+                if (!res.ok) {
+                    throw new Error("Failed to load plan content");
+                }
+                const data = await res.json();
+                setModalPlan(data);
+            } catch (e) {
+                setError(e.message || "Failed to load plan content");
+            } finally {
+                setViewing(false);
+            }
+        }
+
+        function handleDownload(plan) {
+            const content = plan.generatedPlan || "";
+            if (!content) {
+                setError("No generated content to download.");
                 return;
             }
+            const caseInfo = plan.caseInfo || {};
+            const client = caseInfo.client || {};
+            const filename = "caseplan_" + (caseInfo.caseNumber || plan.id || "unknown") + "_" + (client.lastName || "client") + ".md";
+            const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
 
-            container.innerHTML = plans.map(p => {
-                const lc = p.caseInfo || {};
-                const client = lc.client || {};
-                const attorney = lc.attorney || {};
-                return `
-                <div class="card">
-                    <div class="card-header">
-                        <h3>${client.firstName || ''} ${client.lastName || ''} — Case #${lc.caseNumber || ''}</h3>
-                        <div>
-                            <span class="badge ${p.status}">${p.status}</span>
-                            ${p.status === 'completed' ? `<button class="download-btn" onclick="download(${p.id})">⬇ Download</button>` : ''}
+        const hasActive = useMemo(() => plans.some(p => p.status === "pending" || p.status === "processing"), [plans]);
+
+        return (
+            <div className="page">
+                <section className="panel">
+                    <h1 className="panel-title">Case Plan Intake</h1>
+                    {error && <div className="msg error">{error}</div>}
+                    {info && <div className="msg info">{info}</div>}
+                    <form onSubmit={handleSubmit}>
+                        <div className="form-grid">
+                            <Field label="Client First Name *" value={form.clientFirstName} onChange={v => updateField("clientFirstName", v)} />
+                            <Field label="Client Last Name *" value={form.clientLastName} onChange={v => updateField("clientLastName", v)} />
+                            <Field label="Client ID Number" value={form.clientIdNumber} onChange={v => updateField("clientIdNumber", v)} />
+                            <Field label="Attorney Name *" value={form.attorneyName} onChange={v => updateField("attorneyName", v)} />
+                            <Field label="Bar Number *" value={form.barNumber} onChange={v => updateField("barNumber", v)} />
+                            <Field label="Referring Source" value={form.referringSource} onChange={v => updateField("referringSource", v)} />
+                            <Field label="Case Number (Optional)" value={form.caseNumber} onChange={v => updateField("caseNumber", v)} />
+                            <Field label="Primary Cause of Action *" value={form.primaryCauseOfAction} onChange={v => updateField("primaryCauseOfAction", v)} />
+                            <Field label="Opposing Party" value={form.opposingParty} onChange={v => updateField("opposingParty", v)} extraClass="full" />
+                            <Field label="Legal Remedy Sought *" value={form.legalRemedySought} onChange={v => updateField("legalRemedySought", v)} extraClass="full" />
+                            <Field label="Additional Causes" value={form.additionalCauses} onChange={v => updateField("additionalCauses", v)} />
+                            <Field label="Prior Legal Actions" value={form.priorLegalActions} onChange={v => updateField("priorLegalActions", v)} />
+                            <TextAreaField label="Case Documents / Notes" value={form.caseDocuments} onChange={v => updateField("caseDocuments", v)} extraClass="full" />
+                        </div>
+                        <div className="toolbar">
+                            <button className="btn" type="submit" disabled={submitting}>
+                                {submitting ? "Submitting..." : "Submit Case"}
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section className="panel">
+                    <div className="top-row">
+                        <h2 className="panel-title">Case Results</h2>
+                        <div className="toolbar" style={{ marginTop: 0 }}>
+                            <span className="hint">Auto refresh: every {POLL_MS / 1000}s {hasActive ? "(active queue)" : ""}</span>
+                            <button className="btn btn-secondary" onClick={() => fetchPlans(false)} disabled={loading}>Refresh</button>
                         </div>
                     </div>
-                    <div style="font-size:13px;color:#666;margin-bottom:8px;">
-                        ${lc.primaryCauseOfAction || ''} · Atty: ${attorney.name || ''} (${attorney.barNumber || ''})
+                    {loading ? (
+                        <div className="empty">Loading entries...</div>
+                    ) : plans.length === 0 ? (
+                        <div className="empty">No entries yet.</div>
+                    ) : (
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Case</th>
+                                    <th>Cause</th>
+                                    <th>Attorney</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {plans.map(plan => {
+                                    const caseInfo = plan.caseInfo || {};
+                                    const client = caseInfo.client || {};
+                                    const attorney = caseInfo.attorney || {};
+                                    const isCompleted = plan.status === "completed";
+                                    const isFailed = plan.status === "failed";
+                                    return (
+                                        <tr key={plan.id}>
+                                            <td>{plan.id}</td>
+                                            <td>
+                                                <div>{client.firstName || ""} {client.lastName || ""}</div>
+                                                <div className="hint">Case #{caseInfo.caseNumber || "-"}</div>
+                                            </td>
+                                            <td>{caseInfo.primaryCauseOfAction || "-"}</td>
+                                            <td>
+                                                <div>{attorney.name || "-"}</div>
+                                                <div className="hint">{attorney.barNumber || ""}</div>
+                                            </td>
+                                            <td>
+                                                <span className={"status " + (plan.status || "pending")}>{plan.status || "pending"}</span>
+                                                {isFailed && <div className="hint" style={{ marginTop: 6, color: "var(--danger)" }}>{plan.errorMessage || "Processing failed"}</div>}
+                                            </td>
+                                            <td>{formatDateTime(plan.createdAt)}</td>
+                                            <td>
+                                                <div className="row-actions">
+                                                    {isCompleted && (
+                                                        <>
+                                                            <button className="btn btn-secondary" onClick={() => handleView(plan.id)} disabled={viewing}>
+                                                                {viewing ? "Loading..." : "View"}
+                                                            </button>
+                                                            <button className="btn btn-secondary" onClick={() => handleDownload(plan)}>Download .md</button>
+                                                        </>
+                                                    )}
+                                                    {!isCompleted && <span className="hint">No actions</span>}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </section>
+
+                {modalPlan && (
+                    <div className="modal-backdrop" onClick={() => setModalPlan(null)}>
+                        <div className="modal" onClick={(e) => e.stopPropagation()}>
+                            <div className="modal-header">
+                                <h3 className="modal-title">
+                                    Case Plan Detail #{modalPlan.id}
+                                </h3>
+                                <div className="row-actions">
+                                    <button className="btn btn-secondary" onClick={() => handleDownload(modalPlan)}>Download .md</button>
+                                    <button className="btn btn-danger" onClick={() => setModalPlan(null)}>Close</button>
+                                </div>
+                            </div>
+                            <div className="modal-body">
+                                <pre>{modalPlan.generatedPlan || "No content available."}</pre>
+                            </div>
+                        </div>
                     </div>
-                    ${p.status === 'completed' ? `<div class="plan-content">${marked.parse(p.generatedPlan || '')}</div>` : ''}
-                    ${p.status === 'failed' ? `<div class="error-msg">Error: ${escapeHtml(p.errorMessage || 'Unknown error')}</div>` : ''}
-                    <div class="meta">Created: ${new Date(p.createdAt).toLocaleString()}</div>
-                </div>
-                `;
-            }).join('');
-        } catch (e) {
-            console.error('Failed to load plans:', e);
+                )}
+            </div>
+        );
+    }
+
+    function Field({ label, value, onChange, extraClass }) {
+        return (
+            <div className={extraClass || ""}>
+                <label>{label}</label>
+                <input value={value} onChange={e => onChange(e.target.value)} />
+            </div>
+        );
+    }
+
+    function TextAreaField({ label, value, onChange, extraClass }) {
+        return (
+            <div className={extraClass || ""}>
+                <label>{label}</label>
+                <textarea value={value} onChange={e => onChange(e.target.value)} />
+            </div>
+        );
+    }
+
+    function formatDateTime(value) {
+        if (!value) {
+            return "-";
         }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        return date.toLocaleString();
     }
 
-    function download(id) {
-        fetch(API + '/' + id)
-            .then(r => r.json())
-            .then(p => {
-                const lc = p.caseInfo || {};
-                const client = lc.client || {};
-                const blob = new Blob([p.generatedPlan], { type: 'text/markdown' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `caseplan_${lc.caseNumber || 'unknown'}_${client.lastName || 'unknown'}.md`;
-                a.click();
-            });
-    }
-
-    function escapeHtml(s) {
-        if (!s) return '';
-        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    // Load on page open
-    loadPlans();
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 </script>
 </body>
 </html>
