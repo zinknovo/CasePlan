@@ -9,6 +9,8 @@ Desktop.ini
 .vscode/
 .idea/
 .ai/
+.claude/
+.cursor/
 *.swp
 *.swo
 
