@@ -15,5 +15,23 @@ spring:
     host: ${SPRING_REDIS_HOST:localhost}
     port: 6379
 
+# LLM abstraction: set llm.provider to "openai" (DeepSeek/OpenAI) or "claude"
+llm:
+  provider: ${LLM_PROVIDER:openai}
+  openai:
+    base-url: ${LLM_OPENAI_BASE_URL:https://api.deepseek.com/v1}
+    api-key: ${LLM_OPENAI_API_KEY:${DEEPSEEK_API_KEY:}}
+    # Leave empty to auto-resolve latest model from /models.
+    model: ${LLM_OPENAI_MODEL:}
+    model-refresh-seconds: ${LLM_OPENAI_MODEL_REFRESH_SECONDS:2592000}
+    max-tokens: 4000
+  claude:
+    api-key: ${ANTHROPIC_API_KEY:}
+    # Leave empty to auto-resolve latest model from /models.
+    model: ${LLM_CLAUDE_MODEL:}
+    model-refresh-seconds: ${LLM_CLAUDE_MODEL_REFRESH_SECONDS:2592000}
+    max-tokens: 4000
+
+# Legacy (still used if LLM_OPENAI_API_KEY not set)
 deepseek:
   api-key: ${DEEPSEEK_API_KEY:}

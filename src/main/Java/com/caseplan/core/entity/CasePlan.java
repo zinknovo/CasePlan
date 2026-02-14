@@ -1,4 +1,4 @@
-package com.caseplan.entity;
+package com.caseplan.core.entity;
 
 import javax.persistence.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

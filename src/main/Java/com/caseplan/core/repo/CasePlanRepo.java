@@ -1,6 +1,6 @@
-package com.caseplan.repo;
+package com.caseplan.core.repo;
 
-import com.caseplan.entity.CasePlan;
+import com.caseplan.core.entity.CasePlan;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.Instant;

@@ -1,4 +1,4 @@
-package com.caseplan.entity;
+package com.caseplan.core.entity;
 
 import javax.persistence.*;
 
@@ -29,6 +29,7 @@ public class CaseInfo {
 
     private String caseNumber;
     private String primaryCauseOfAction;
+    private String opposingParty;
     private String legalRemedySought;
     private String additionalCauses;
     private String priorLegalActions;

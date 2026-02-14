@@ -1,6 +1,6 @@
-package com.caseplan.repo;
+package com.caseplan.core.repo;
 
-import com.caseplan.entity.Attorney;
+import com.caseplan.core.entity.Attorney;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 

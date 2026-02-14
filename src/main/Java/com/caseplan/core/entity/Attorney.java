@@ -1,4 +1,4 @@
-package com.caseplan.entity;
+package com.caseplan.core.entity;
 
 import javax.persistence.*;
 import lombok.Getter;
@@ -8,19 +8,20 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table(name = "dev_clients")
+@Table(name = "dev_attorneys")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Client {
+public class Attorney {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String firstName;
-    private String lastName;
-    private String idNumber; // nullable for MVP
+    private String name;
+
+    @Column(unique = true)
+    private String barNumber;
 
     private Instant createdAt;
 
