@@ -41,5 +41,51 @@ services:
       SPRING_REDIS_HOST: redis
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      web:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:10.4.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      prometheus:
+        condition: service_started
+
+  test:
+    image: maven:3.8-openjdk-11
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - m2cache:/root/.m2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/dev_db
+      SPRING_DATASOURCE_USERNAME: dev_xh
+      SPRING_DATASOURCE_PASSWORD: dev_xh
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      IT_SPRING_REDIS_DATABASE: 15
+      LLM_PROVIDER: openai
+    command: mvn -Dspring.profiles.active=it verify
+
 volumes:
   pgdata:
+  m2cache:

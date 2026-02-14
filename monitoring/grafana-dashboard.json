@@ -1,0 +1,260 @@
+{
+  "dashboard": {
+    "title": "CasePlan Monitoring",
+    "tags": ["caseplan"],
+    "timezone": "browser",
+    "refresh": "15s",
+    "panels": [
+      {
+        "title": "HTTP Request Rate (/sec)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_count{application=\"caseplan\"}[1m])",
+            "legendFormat": "{{method}} {{uri}} {{status}}"
+          }
+        ]
+      },
+      {
+        "title": "HTTP Avg Response Time (ms)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+        "targets": [
+          {
+            "expr": "rate(http_server_requests_seconds_sum{application=\"caseplan\"}[1m]) / rate(http_server_requests_seconds_count{application=\"caseplan\"}[1m]) * 1000",
+            "legendFormat": "{{method}} {{uri}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "ms" }
+        }
+      },
+      {
+        "title": "HTTP Max Response Time (ms)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+        "targets": [
+          {
+            "expr": "http_server_requests_seconds_max{application=\"caseplan\"} * 1000",
+            "legendFormat": "{{method}} {{uri}} {{status}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "ms" }
+        }
+      },
+      {
+        "title": "HTTP Errors",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+        "targets": [
+          {
+            "expr": "increase(http_server_requests_seconds_count{application=\"caseplan\",status=~\"5..\"}[1m])",
+            "legendFormat": "5xx - {{method}} {{uri}}"
+          },
+          {
+            "expr": "increase(http_server_requests_seconds_count{application=\"caseplan\",status=~\"4..\"}[1m])",
+            "legendFormat": "4xx - {{method}} {{uri}}"
+          }
+        ]
+      },
+      {
+        "title": "Total Requests",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
+        "targets": [
+          {
+            "expr": "sum(http_server_requests_seconds_count{application=\"caseplan\"})",
+            "legendFormat": "Total"
+          }
+        ]
+      },
+      {
+        "title": "5xx Count (5min)",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
+        "targets": [
+          {
+            "expr": "sum(increase(http_server_requests_seconds_count{application=\"caseplan\",status=~\"5..\"}[5m]))",
+            "legendFormat": "5xx"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "red", "value": 1 }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "title": "App Uptime",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+        "targets": [
+          {
+            "expr": "process_uptime_seconds{application=\"caseplan\"}",
+            "legendFormat": "Uptime"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "Disk Free",
+        "type": "stat",
+        "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
+        "targets": [
+          {
+            "expr": "disk_free_bytes{application=\"caseplan\"}",
+            "legendFormat": "Free"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "bytes" }
+        }
+      },
+      {
+        "title": "JVM Heap Memory",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{application=\"caseplan\",area=\"heap\"}",
+            "legendFormat": "Used - {{id}}"
+          },
+          {
+            "expr": "jvm_memory_max_bytes{application=\"caseplan\",area=\"heap\"}",
+            "legendFormat": "Max - {{id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "bytes" }
+        }
+      },
+      {
+        "title": "JVM Non-Heap Memory",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+        "targets": [
+          {
+            "expr": "jvm_memory_used_bytes{application=\"caseplan\",area=\"nonheap\"}",
+            "legendFormat": "Used - {{id}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "bytes" }
+        }
+      },
+      {
+        "title": "GC Pause Time (/sec)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+        "targets": [
+          {
+            "expr": "rate(jvm_gc_pause_seconds_sum{application=\"caseplan\"}[1m])",
+            "legendFormat": "{{action}} - {{cause}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "s" }
+        }
+      },
+      {
+        "title": "JVM Threads",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+        "targets": [
+          {
+            "expr": "jvm_threads_live_threads{application=\"caseplan\"}",
+            "legendFormat": "Live"
+          },
+          {
+            "expr": "jvm_threads_daemon_threads{application=\"caseplan\"}",
+            "legendFormat": "Daemon"
+          },
+          {
+            "expr": "jvm_threads_peak_threads{application=\"caseplan\"}",
+            "legendFormat": "Peak"
+          }
+        ]
+      },
+      {
+        "title": "CPU Usage",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+        "targets": [
+          {
+            "expr": "process_cpu_usage{application=\"caseplan\"}",
+            "legendFormat": "App CPU"
+          },
+          {
+            "expr": "system_cpu_usage{application=\"caseplan\"}",
+            "legendFormat": "System CPU"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "percentunit", "max": 1 }
+        }
+      },
+      {
+        "title": "DB Connection Pool (HikariCP)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+        "targets": [
+          {
+            "expr": "hikaricp_connections_active{application=\"caseplan\"}",
+            "legendFormat": "Active"
+          },
+          {
+            "expr": "hikaricp_connections_idle{application=\"caseplan\"}",
+            "legendFormat": "Idle"
+          },
+          {
+            "expr": "hikaricp_connections_max{application=\"caseplan\"}",
+            "legendFormat": "Max"
+          },
+          {
+            "expr": "hikaricp_connections_pending{application=\"caseplan\"}",
+            "legendFormat": "Pending"
+          }
+        ]
+      },
+      {
+        "title": "Redis Command Latency (ms)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 44 },
+        "targets": [
+          {
+            "expr": "lettuce_command_completion_seconds_max{application=\"caseplan\"} * 1000",
+            "legendFormat": "{{command}}"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": { "unit": "ms" }
+        }
+      },
+      {
+        "title": "Log Events (/min)",
+        "type": "timeseries",
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 44 },
+        "targets": [
+          {
+            "expr": "rate(log4j2_events_total{application=\"caseplan\",level=\"error\"}[1m]) * 60",
+            "legendFormat": "ERROR"
+          },
+          {
+            "expr": "rate(log4j2_events_total{application=\"caseplan\",level=\"warn\"}[1m]) * 60",
+            "legendFormat": "WARN"
+          }
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}
