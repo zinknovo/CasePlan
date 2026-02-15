@@ -24,7 +24,6 @@ target/
 docker-images-summary.md
 *-summary.md
 *-plan.md
-notes.md
 CODE_MIGRATION_TABLE.md
 
 # Local secrets / environment (never commit real keys)

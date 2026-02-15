@@ -19,6 +19,37 @@ CasePlan 是一个法律案件录入与 Case Plan 生成系统，支持两种运
 - 重试超限消息进入 DLQ（`maxReceiveCount=3`）
 - 提供 Web 页面与 API 接入
 
+## 项目功能介绍
+
+### 目标与场景
+
+- 目标用户是律师助理（Paralegal），用于录入案件并触发方案生成
+- 系统自动生成法律服务方案（Legal Service Plan），供律师审核、下载、打印或归档
+- 重点解决人工撰写耗时长、积压多、合规审查材料准备慢的问题
+
+### 输入与校验
+
+- 必填核心字段包括：委托人姓名、转介律师与执业证号、案件编号、主要案由、法律救济诉求、案件材料
+- 支持附加案由、既往法律行动等扩展信息
+- 服务端执行格式/唯一性/必填校验，避免脏数据进入后续流程
+
+### 生成输出
+
+- 一案一方案（一个案件对应一个计划）
+- 方案默认包含四个板块：案情摘要、服务目标、律师建议策略、跟进计划
+- 结果可下载，用于线下审核与对外提交
+
+### 重复检测与告警分支
+
+- 明确重复（如关键组合字段一致）直接阻断提交（`ERROR`）
+- 疑似重复（信息部分冲突）给出可确认告警（`WARNING`）
+- 转介律师执业证号冲突按强校验处理，避免主数据污染
+
+### 迭代范围
+
+- 当前版本聚焦 MVP：录入、校验、去重、生成、下载、状态追踪
+- 增强项（后续）：在线审核编辑、权限模型、审计日志、版本管理、批量导入、草稿保存
+
 ## 技术栈
 
 - Java 11
@@ -162,7 +193,7 @@ JaCoCo 门槛（`pom.xml`）：
 
 ## 监控与冒烟测试
 
-- 监控方案：`MONITORING.md`
+- 监控方案：`monitoring.md`
 - Lambda 指标：CloudWatch EMF（命名空间 `CasePlan/Lambda`）— 零依赖，stdout 输出
 - Grafana 仪表盘：
   - `caseplan-overview.json` — Prometheus（本地 Spring Boot）
@@ -232,9 +263,8 @@ cd target/lambda && zip -r ../legal-caseplan-lambda.zip .
 
 ## 相关文档
 
-- 架构：`architecture.md`
-- 监控：`MONITORING.md`
-- 产品文档：`PRD.md`
+- 架构：`architect.md`
+- 监控：`monitoring.md`
 - OpenAPI：`docs/api/openapi.yaml`
-- 后端开发手册：`docs/backend_api_playbook.md`
-- Terraform CD 说明：`docs/cd_terraform_oidc.md`
+- 后端开发手册：`docs/backend-api-playbook.md`
+- Terraform CD 说明：`docs/cd-terraform-oidc.md`

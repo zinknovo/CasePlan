@@ -1,5 +1,5 @@
 <p align="right">
-  <a href="./backend_api_playbook.zh-CN.md"> <img alt="中文" src="https://img.shields.io/badge/中文-2da44e?style=for-the-badge"> </a>
+  <a href="./backend-api-playbook.zh-CN.md"> <img alt="中文" src="https://img.shields.io/badge/中文-2da44e?style=for-the-badge"> </a>
 </p>
 
 # Backend API Playbook (Entry-Level Friendly)

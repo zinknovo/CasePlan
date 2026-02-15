@@ -19,6 +19,37 @@ The current project is **Lambda-first**, while preserving local development and 
 - DLQ handling after max retries (`maxReceiveCount=3`)
 - Web UI (`index.html`) and API integration support
 
+## Functional Overview
+
+### Goal and Scope
+
+- Primary operator is a paralegal who submits case intake data and triggers plan generation
+- The system generates a Legal Service Plan for attorney review, download, printing, or filing
+- Main value is reducing manual drafting time and handling compliance-driven case volume
+
+### Inputs and Validation
+
+- Required fields include client name, referring attorney and bar number, case number, primary cause of action, remedy sought, and case documents
+- Additional causes and prior legal actions are supported as optional inputs
+- Server-side validation enforces required fields, format checks, and uniqueness constraints
+
+### Generated Output
+
+- One plan per case
+- Default plan sections: Problem List, Goals, Attorney Interventions, Monitoring Plan
+- Output is downloadable for offline review and external submission workflows
+
+### Duplicate Detection and Warning Flow
+
+- Definite duplicates are blocked as `ERROR`
+- Potential duplicates are surfaced as confirmable `WARNING`
+- Referring attorney bar-number conflicts are treated as hard validation errors
+
+### Iteration Plan
+
+- Current scope is MVP: intake, validation, dedup, generation, download, and status tracking
+- Future enhancements: online attorney review/editing, role-based permissions, audit logs, version history, bulk import, draft save
+
 ## Tech Stack
 
 - Java 11
@@ -162,7 +193,7 @@ JaCoCo thresholds in `pom.xml`:
 
 ## Monitoring and Smoke Test
 
-- Monitoring plan: `MONITORING.md`
+- Monitoring plan: `monitoring.md`
 - Lambda metrics: CloudWatch EMF (namespace `CasePlan/Lambda`) — zero-dependency, stdout-based
 - Grafana dashboards:
   - `caseplan-overview.json` — Prometheus (local Spring Boot)
@@ -232,9 +263,8 @@ cd target/lambda && zip -r ../legal-caseplan-lambda.zip .
 
 ## Docs
 
-- Architecture: `architecture.md`
-- Monitoring: `MONITORING.md`
-- Product doc: `PRD.md`
+- Architecture: `architect.md`
+- Monitoring: `monitoring.md`
 - OpenAPI: `docs/api/openapi.yaml`
-- Backend playbook: `docs/backend_api_playbook.md`
-- Terraform CD notes: `docs/cd_terraform_oidc.md`
+- Backend playbook: `docs/backend-api-playbook.md`
+- Terraform CD notes: `docs/cd-terraform-oidc.md`
