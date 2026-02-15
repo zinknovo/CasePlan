@@ -124,6 +124,7 @@ jobs:
             echo "deepseek_api_key                     = \"${DEEPSEEK_API_KEY}\""
             echo "cors_allow_origins                   = ${CORS_ALLOW_ORIGINS_JSON}"
           } > ci.auto.tfvars
+          terraform fmt ci.auto.tfvars
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
