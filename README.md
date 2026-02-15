@@ -1,9 +1,10 @@
 <p align="right">
   <a href="#english"> <img alt="English" src="https://img.shields.io/badge/English-1f6feb?style=for-the-badge"> </a>
-  <a href="#中文-点击展开"> <img alt="中文" src="https://img.shields.io/badge/中文-2da44e?style=for-the-badge"> </a>
+  <a href="#中文"> <img alt="中文" src="https://img.shields.io/badge/中文-2da44e?style=for-the-badge"> </a>
 </p>
 
-<a id="english"></a>
+<details open>
+<summary><a id="english"></a><strong>English</strong></summary>
 
 # CasePlan
 
@@ -242,12 +243,12 @@ cd target/lambda && zip -r ../legal-caseplan-lambda.zip .
 - Backend playbook: `docs/backend_api_playbook.md`
 - Terraform CD notes: `docs/cd_terraform_oidc.md`
 
----
+</details>
 
 <details>
-<summary><a id="中文-点击展开"></a><strong>中文（点击展开）</strong></summary>
+<summary><a id="中文"></a><strong>中文</strong></summary>
 
-## CasePlan（中文说明）
+# CasePlan（中文说明）
 
 CasePlan 是一个法律案件录入与 Case Plan 生成系统，支持两种运行形态：
 
@@ -256,7 +257,7 @@ CasePlan 是一个法律案件录入与 Case Plan 生成系统，支持两种运
 
 当前项目以 **Lambda 路径为主**，同时保留本地开发调试能力。
 
-### 功能
+## 功能
 
 - 案件创建（含校验、重复检查、告警分支）
 - 队列异步生成 Case Plan
@@ -264,7 +265,7 @@ CasePlan 是一个法律案件录入与 Case Plan 生成系统，支持两种运
 - 重试超限消息进入 DLQ（`maxReceiveCount=3`）
 - 提供 Web 页面与 API 接入
 
-### 技术栈
+## 技术栈
 
 - Java 11
 - Spring Boot 2.7
@@ -274,7 +275,49 @@ CasePlan 是一个法律案件录入与 Case Plan 生成系统，支持两种运
 - AWS Lambda / API Gateway / SQS / RDS
 - Maven / JUnit4 / Mockito / JaCoCo
 
-### 本地启动
+## 项目结构
+
+```text
+src/main/java/com/caseplan
+  adapter/
+    in/
+      web/        # Spring MVC 控制器
+      lambda/     # Lambda 处理器
+      queue/      # 本地消费者
+      intake/     # 多数据源接入适配器
+    out/
+      persistence/# JPA 持久层
+      queue/      # Redis/SQS 队列适配器
+      llm/        # OpenAI/Claude LLM 适配器
+  application/
+    service/      # 用例服务
+    port/         # 入站/出站端口
+  domain/
+    model/        # 领域模型
+
+src/main/resources/static/index.html  # Web 页面
+infra/terraform-replica/              # 临时基础设施复刻（Terraform）
+scripts/smoke_apigw_lambda.sh         # API Gateway -> Lambda 冒烟测试
+```
+
+## 运行模式
+
+### 本地模式（Spring Web）
+
+- API 基础路径：`/api/caseplans`
+- 队列提供者：Redis（`QUEUE_PROVIDER=redis`）
+- 后台处理器：`CasePlanConsumer`
+
+### AWS 模式（Lambda）
+
+- `POST /orders` -> `CreateOrderHandler`
+- `GET /orders/{id}` -> `GetOrderStatusHandler`
+- SQS 事件源 -> `GenerateCasePlanWorkerHandler`
+- 队列提供者：SQS（`QUEUE_PROVIDER=sqs`）
+
+## 本地启动
+
+### 方式 A：Docker Compose 启动依赖，Maven 运行应用
 
 ```bash
 docker compose up -d db redis
@@ -288,21 +331,73 @@ mvn spring-boot:run
 - Prometheus：`http://localhost:9090`
 - Grafana：`http://localhost:3000`
 
-### 关键配置（`application.yaml`）
-
-- 数据库：`SPRING_DATASOURCE_*`
-- 队列：`QUEUE_PROVIDER`、`QUEUE_URL`、`AWS_REGION`
-- LLM：`LLM_PROVIDER`、`LLM_OPENAI_API_KEY` / `DEEPSEEK_API_KEY`、`ANTHROPIC_API_KEY`
-
-### API 概览
-
-- 本地 Web：`/api/caseplans`、`/api/clients`、`/api/attorneys`、`/api/intake`
-- Lambda 网关：`POST /orders`、`GET /orders/{id}`
-
-### 测试
+### 方式 B：完整 Compose 栈（含测试容器）
 
 ```bash
+docker compose up --build
+```
+
+## 关键配置
+
+主配置文件：`src/main/resources/application.yaml`
+
+### 数据库
+
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+本地默认 URL：`jdbc:postgresql://localhost:5433/dev_db`
+
+### 队列
+
+- `QUEUE_PROVIDER`：`redis` 或 `sqs`
+- `QUEUE_URL`：provider 为 `sqs` 时必填
+- `AWS_REGION`：默认 `us-east-2`
+
+### LLM
+
+- `LLM_PROVIDER`：`openai` 或 `claude`
+- `LLM_OPENAI_API_KEY` / `DEEPSEEK_API_KEY`
+- `LLM_OPENAI_BASE_URL`（默认兼容 DeepSeek）
+- `ANTHROPIC_API_KEY`
+
+## API 概览
+
+### 本地 Web API
+
+- `POST /api/caseplans`
+- `GET /api/caseplans`
+- `GET /api/caseplans/{id}`
+- `GET /api/caseplans/{id}/status`
+- `POST /api/caseplans/{id}/retry`
+- `GET /api/caseplans/{id}/download`
+- `POST /api/clients`、`PUT /api/clients/{id}`、`DELETE /api/clients/{id}`
+- `POST /api/attorneys`
+- `POST /api/intake?source=jsonA|jsonB|xml`
+
+### Lambda / API Gateway API
+
+- `POST /orders`
+- `GET /orders/{id}`
+
+示例：
+
+```bash
+curl -X POST "$API/orders" \
+  -H 'content-type: application/json' \
+  -d '{"clientFirstName":"A","clientLastName":"B","attorneyName":"C","barNumber":"BAR-1","primaryCauseOfAction":"Contract","remedySought":"Damages"}'
+
+curl "$API/orders/123"
+```
+
+## 测试
+
+```bash
+# 单元测试（不含 *IT）
 mvn test
+
+# 单元测试 + 集成测试 + 覆盖率关卡
 mvn verify
 ```
 
@@ -311,9 +406,26 @@ JaCoCo 门槛（`pom.xml`）：
 - 行覆盖率 >= 90%
 - 分支覆盖率 >= 90%
 
-### Terraform 临时复刻
+## 监控与冒烟测试
+
+- 监控方案：`MONITORING.md`
+- Lambda 指标：CloudWatch EMF（命名空间 `CasePlan/Lambda`）— 零依赖，stdout 输出
+- Grafana 仪表盘：
+  - `caseplan-overview.json` — Prometheus（本地 Spring Boot）
+  - `lambda-overview.json` — CloudWatch（Lambda + SQS + EMF 业务指标）
+- CloudWatch 数据源：`monitoring/grafana/provisioning/datasources/cloudwatch.yml`
+- 冒烟测试脚本：`scripts/smoke_apigw_lambda.sh`
+
+```bash
+API_BASE_URL="https://<api-id>.execute-api.<region>.amazonaws.com" \
+  bash scripts/smoke_apigw_lambda.sh
+```
+
+## Terraform 临时复刻
 
 目录：`infra/terraform-replica/`
+
+用于临时创建 API/Lambda/SQS/IAM/SG 副本进行验证，之后销毁。
 
 ```bash
 cd infra/terraform-replica
@@ -323,32 +435,54 @@ terraform apply
 terraform destroy
 ```
 
-### CI/CD
+详情：`infra/terraform-replica/README.md`
 
-**CI** — `.github/workflows/ci.yml`：PostgreSQL + Redis 容器，运行 `mvn verify`，代码变更时自动触发。
+## CI/CD
 
-**CD** — `.github/workflows/cd-terraform.yml`：
-- push main / PR / 手动触发
-- GitHub OIDC 认证 AWS（无静态密钥）
-- 流程：构建 Lambda 包 → 校验配置 → Terraform init/plan/apply
-- Terraform state 存 S3 + DynamoDB 锁
+### CI — `.github/workflows/ci.yml`
 
-**分支保护**：admin 可直接 push main，其他人需 PR + 1 approval + CI 通过。
+- 使用 PostgreSQL + Redis 服务容器
+- 运行：`mvn -B -Dspring.profiles.active=it verify`
+- 代码/构建文件变更时自动触发（`src/**`、`pom.xml`、`Dockerfile` 等）
 
-### 安全建议
+### CD — `.github/workflows/cd-terraform.yml`
 
-- 不要把 DB 密码与 LLM Key 明文提交。
-- 生产环境建议使用 Secrets Manager / SSM。
+- push main（基础设施/源码变更）、PR 或手动 `workflow_dispatch` 触发
+- 使用 **GitHub OIDC** 认证 AWS IAM Role（无静态密钥）
+- 流程：构建 Lambda 包 → 校验配置 → 渲染 tfvars → Terraform init/plan
+- `apply` 任务仅在 push main 或手动触发且 `apply=true` 时执行
+- Terraform state 存储在 S3 + DynamoDB 锁
+
+### 分支保护（Ruleset）
+
+- admin 可直接 push `main`（旁路）
+- 其他人需 PR + 1 approval + CI `test` 通过
+
+## Lambda 打包
+
+Terraform 需要 `target/legal-caseplan-lambda.zip`。
+
+如果不存在，手动构建：
+
+```bash
+mvn -DskipTests package
+cd target/lambda && zip -r ../legal-caseplan-lambda.zip .
+```
+
+## 安全建议
+
+- 不要把 DB 密码与 LLM Key 明文提交到代码/tfvars。
+- 生产环境建议使用 AWS Secrets Manager / SSM。
 - CloudFront 前端 + API Gateway 后端时要正确配置 CORS。
 - 若 SQS 使用 Interface VPCE，需放通 Lambda SG 到 VPCE SG 的 443。
 
-### 相关文档
+## 相关文档
 
-- `architecture.md`
-- `MONITORING.md`
-- `PRD.md`
-- `docs/api/openapi.yaml`
-- `docs/backend_api_playbook.md`
-- `docs/cd_terraform_oidc.md`
+- 架构：`architecture.md`
+- 监控：`MONITORING.md`
+- 产品文档：`PRD.md`
+- OpenAPI：`docs/api/openapi.yaml`
+- 后端开发手册：`docs/backend_api_playbook.md`
+- Terraform CD 说明：`docs/cd_terraform_oidc.md`
 
 </details>

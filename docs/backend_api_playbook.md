@@ -1,9 +1,10 @@
 <p align="right">
   <a href="#english"> <img alt="English" src="https://img.shields.io/badge/English-1f6feb?style=for-the-badge"> </a>
-  <a href="#中文-点击展开"> <img alt="中文" src="https://img.shields.io/badge/中文-2da44e?style=for-the-badge"> </a>
+  <a href="#中文"> <img alt="中文" src="https://img.shields.io/badge/中文-2da44e?style=for-the-badge"> </a>
 </p>
 
-<a id="english"></a>
+<details open>
+<summary><a id="english"></a><strong>English</strong></summary>
 
 # Backend API Playbook (Entry-Level Friendly)
 
@@ -119,10 +120,10 @@ Use `202 Accepted` when request triggers async processing.
 - `201` implies a new resource was created now.
 - `202` means request accepted and work will continue in background.
 
----
+</details>
 
 <details>
-<summary><a id="中文-点击展开"></a><strong>中文（点击展开）</strong></summary>
+<summary><a id="中文"></a><strong>中文</strong></summary>
 
 # 后端 API 开发手册（新手友好版）
 
