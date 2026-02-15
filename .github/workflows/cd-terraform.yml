@@ -81,7 +81,15 @@ jobs:
           aws-region: ${{ env.AWS_REGION != '' && env.AWS_REGION || 'us-east-2' }}
 
       - name: Build Lambda Artifact
-        run: mvn -B -DskipTests package
+        run: |
+          mvn -B -DskipTests package
+          mkdir -p target/lambda/lib
+          cd target/lambda
+          jar xf ../legal-caseplan-0.0.1.jar BOOT-INF/classes BOOT-INF/lib META-INF
+          cp -r BOOT-INF/classes/* .
+          cp BOOT-INF/lib/* lib/
+          rm -rf BOOT-INF
+          zip -qr ../legal-caseplan-lambda.zip .
 
       - name: Validate Required CI Config
         run: |
