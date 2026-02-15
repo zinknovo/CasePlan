@@ -230,6 +230,8 @@
                         <exclude>com/caseplan/App.class</exclude>
                         <exclude>com/caseplan/adapter/out/llm/LLMConfig.class</exclude>
                         <exclude>com/caseplan/adapter/in/queue/CasePlanConsumer*.class</exclude>
+                        <exclude>com/caseplan/adapter/in/lambda/LambdaSpringContext.class</exclude>
+                        <exclude>com/caseplan/adapter/out/queue/QueueConfig.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

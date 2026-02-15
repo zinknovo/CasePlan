@@ -601,4 +601,68 @@ public class CasePlanServiceTest {
 
         assertFalse(result.isPresent());
     }
+
+    @Test(expected = com.caseplan.common.exception.BlockException.class)
+    public void getForDownload_completedButWhitespaceContent_throwsBlock() {
+        CasePlan plan = new CasePlan();
+        plan.setId(30L);
+        plan.setStatus("completed");
+        plan.setGeneratedPlan("   ");
+        when(casePlanRepo.findById(30L)).thenReturn(Optional.of(plan));
+
+        service.getForDownload(30L);
+    }
+
+    @Test(expected = com.caseplan.common.exception.BlockException.class)
+    public void getForDownload_completedButNullContent_throwsBlock() {
+        CasePlan plan = new CasePlan();
+        plan.setId(31L);
+        plan.setStatus("completed");
+        plan.setGeneratedPlan(null);
+        when(casePlanRepo.findById(31L)).thenReturn(Optional.of(plan));
+
+        service.getForDownload(31L);
+    }
+
+    @Test
+    public void create_existingClientByName_withNullIdNumberOnExisting_noWarning() {
+        request.setClientIdNumber("NEW-ID");
+        request.setConfirm(false);
+        when(attorneyRepo.findByBarNumber("BAR123")).thenReturn(Optional.empty());
+        when(clientRepo.findByIdNumber("NEW-ID")).thenReturn(Optional.empty());
+        Client existingByName = new Client();
+        existingByName.setId(55L);
+        existingByName.setFirstName("John");
+        existingByName.setLastName("Doe");
+        existingByName.setIdNumber(null); // existing client has no idNumber
+        when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.of(existingByName));
+        when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
+                anyLong(), anyString(), anyString(), any(), any())).thenReturn(
+                Collections.emptyList(), Collections.emptyList());
+
+        CreateCasePlanResult result = service.create(request);
+        // existing client has null idNumber, so the ID mismatch branch is not entered
+        assertEquals(0, result.getWarnings().size());
+    }
+
+    @Test
+    public void retryFailed_savedIdNull_doesNotEnqueue() {
+        CasePlan failed = new CasePlan();
+        failed.setId(40L);
+        failed.setStatus("failed");
+        when(casePlanRepo.findById(40L)).thenReturn(Optional.of(failed));
+        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(new Answer<CasePlan>() {
+            @Override
+            public CasePlan answer(InvocationOnMock invocation) {
+                CasePlan saved = invocation.getArgument(0);
+                saved.setId(null); // simulate null ID after save
+                return saved;
+            }
+        });
+
+        Optional<CasePlan> result = service.retryFailed(40L);
+
+        assertTrue(result.isPresent());
+        verify(queuePort, never()).enqueue(anyString());
+    }
 }

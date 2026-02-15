@@ -439,6 +439,52 @@ public class BaseLLMServiceTest {
 
     @SuppressWarnings("unchecked")
     @Test
+    public void resolveModel_sameTimestamp_choosesLexicographicallyLater() {
+        service = new TestLLMService(restTemplate, null, 86400);
+
+        Map<String, Object> model1 = new HashMap<>();
+        model1.put("id", "model-aaa");
+        model1.put("created", 1500000000);
+
+        Map<String, Object> model2 = new HashMap<>();
+        model2.put("id", "model-zzz");
+        model2.put("created", 1500000000); // same timestamp
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("data", Arrays.asList(model1, model2));
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), any(ParameterizedTypeReference.class)))
+                .thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
+
+        assertEquals("model-zzz", service.testResolveModel());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void resolveModel_sameTimestamp_lexicographicallyEarlierNotChosen() {
+        service = new TestLLMService(restTemplate, null, 86400);
+
+        // model2 comes first but is lexicographically later; model1 comes second with earlier ID
+        Map<String, Object> model1 = new HashMap<>();
+        model1.put("id", "model-zzz");
+        model1.put("created", 1500000000);
+
+        Map<String, Object> model2 = new HashMap<>();
+        model2.put("id", "model-aaa");
+        model2.put("created", 1500000000);
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("data", Arrays.asList(model1, model2));
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), any(ParameterizedTypeReference.class)))
+                .thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
+
+        // model-zzz was seen first as bestCandidate; model-aaa has same time but is lexicographically earlier, so not chosen
+        assertEquals("model-zzz", service.testResolveModel());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
     public void resolveModel_nullTimeValue_usesMinValue() {
         service = new TestLLMService(restTemplate, null, 86400);
 
