@@ -107,23 +107,23 @@ jobs:
           : "${OPENAI_API_KEY:=}"
           : "${DEEPSEEK_API_KEY:=}"
 
-          cat > ci.auto.tfvars <<EOF
-          aws_region = "${AWS_REGION}"
-          project_name = "${PROJECT_NAME}"
-          environment = "${DEPLOY_ENV}"
-          vpc_id = "${VPC_ID}"
-          lambda_subnet_ids = ${LAMBDA_SUBNET_IDS_JSON}
-          additional_lambda_security_group_ids = ${ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON}
-          rds_security_group_id = "${RDS_SECURITY_GROUP_ID}"
-          sqs_vpce_security_group_id = "${SQS_VPCE_SECURITY_GROUP_ID}"
-          datasource_url = "${DATASOURCE_URL}"
-          datasource_username = "${DATASOURCE_USERNAME}"
-          datasource_password = "${DATASOURCE_PASSWORD}"
-          llm_provider = "${LLM_PROVIDER}"
-          openai_api_key = "${OPENAI_API_KEY}"
-          deepseek_api_key = "${DEEPSEEK_API_KEY}"
-          cors_allow_origins = ${CORS_ALLOW_ORIGINS_JSON}
-          EOF
+          cat > ci.auto.tfvars <<TFVARS
+aws_region                             = "${AWS_REGION}"
+project_name                           = "${PROJECT_NAME}"
+environment                            = "${DEPLOY_ENV}"
+vpc_id                                 = "${VPC_ID}"
+lambda_subnet_ids                      = ${LAMBDA_SUBNET_IDS_JSON}
+additional_lambda_security_group_ids   = ${ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON}
+rds_security_group_id                  = "${RDS_SECURITY_GROUP_ID}"
+sqs_vpce_security_group_id             = "${SQS_VPCE_SECURITY_GROUP_ID}"
+datasource_url                         = "${DATASOURCE_URL}"
+datasource_username                    = "${DATASOURCE_USERNAME}"
+datasource_password                    = "${DATASOURCE_PASSWORD}"
+llm_provider                           = "${LLM_PROVIDER}"
+openai_api_key                         = "${OPENAI_API_KEY}"
+deepseek_api_key                       = "${DEEPSEEK_API_KEY}"
+cors_allow_origins                     = ${CORS_ALLOW_ORIGINS_JSON}
+TFVARS
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}

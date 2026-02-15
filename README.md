@@ -166,6 +166,11 @@ JaCoCo thresholds in `pom.xml`:
 ## Monitoring and Smoke Test
 
 - Monitoring plan: `MONITORING.md`
+- Lambda metrics: CloudWatch EMF (namespace `CasePlan/Lambda`) — zero-dependency, stdout-based
+- Grafana dashboards:
+  - `caseplan-overview.json` — Prometheus (local Spring Boot)
+  - `lambda-overview.json` — CloudWatch (Lambda + SQS + EMF business metrics)
+- CloudWatch datasource: `monitoring/grafana/provisioning/datasources/cloudwatch.yml`
 - Smoke script: `scripts/smoke_apigw_lambda.sh`
 
 ```bash
@@ -189,18 +194,26 @@ terraform destroy
 
 Details: `infra/terraform-replica/README.md`
 
-## CI
+## CI/CD
 
-Workflow: `.github/workflows/ci.yml`
+### CI — `.github/workflows/ci.yml`
 
 - Uses PostgreSQL + Redis service containers
 - Runs: `mvn -B -Dspring.profiles.active=it verify`
-- Triggered only when code/build files change:
-  - `src/**`
-  - `pom.xml`
-  - `Dockerfile`
-  - `docker-compose.yml`
-  - `.github/workflows/ci.yml`
+- Triggered on code/build file changes (`src/**`, `pom.xml`, `Dockerfile`, etc.)
+
+### CD — `.github/workflows/cd-terraform.yml`
+
+- Triggered on push to `main` (infra/src changes), PR, or manual `workflow_dispatch`
+- Uses **GitHub OIDC** to assume an AWS IAM Role (no static credentials)
+- Pipeline: Build Lambda artifact → Validate config → Render tfvars → Terraform init/plan
+- `apply` job runs only on push to main or manual dispatch with `apply=true`
+- Terraform state stored in S3 + DynamoDB lock
+
+### Branch Protection (Ruleset)
+
+- Direct push to `main` requires admin role (bypass)
+- Others must go through PR with 1 approval + CI `test` check passing
 
 ## Lambda Packaging
 
@@ -310,17 +323,17 @@ terraform apply
 terraform destroy
 ```
 
-### CI
+### CI/CD
 
-工作流：`.github/workflows/ci.yml`
+**CI** — `.github/workflows/ci.yml`：PostgreSQL + Redis 容器，运行 `mvn verify`，代码变更时自动触发。
 
-仅当以下文件变化时触发：
+**CD** — `.github/workflows/cd-terraform.yml`：
+- push main / PR / 手动触发
+- GitHub OIDC 认证 AWS（无静态密钥）
+- 流程：构建 Lambda 包 → 校验配置 → Terraform init/plan/apply
+- Terraform state 存 S3 + DynamoDB 锁
 
-- `src/**`
-- `pom.xml`
-- `Dockerfile`
-- `docker-compose.yml`
-- `.github/workflows/ci.yml`
+**分支保护**：admin 可直接 push main，其他人需 PR + 1 approval + CI 通过。
 
 ### 安全建议
 
