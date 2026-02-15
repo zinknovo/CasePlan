@@ -19,17 +19,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      CI_POSTGRES_DB: ${{ vars.CI_POSTGRES_DB != '' && vars.CI_POSTGRES_DB || 'dev_db' }}
+      CI_POSTGRES_USER: ${{ vars.CI_POSTGRES_USER != '' && vars.CI_POSTGRES_USER || 'ci_test_user' }}
+      CI_POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: dev_db
-          POSTGRES_USER: dev_xh
-          POSTGRES_PASSWORD: dev_xh
+          POSTGRES_DB: ${{ env.CI_POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.CI_POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.CI_POSTGRES_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U dev_xh -d dev_db"
+          --health-cmd="pg_isready -U ${{ env.CI_POSTGRES_USER }} -d ${{ env.CI_POSTGRES_DB }}"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -56,9 +60,9 @@ jobs:
 
       - name: Unit + Integration Tests
         env:
-          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/dev_db
-          SPRING_DATASOURCE_USERNAME: dev_xh
-          SPRING_DATASOURCE_PASSWORD: dev_xh
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ env.CI_POSTGRES_DB }}
+          SPRING_DATASOURCE_USERNAME: ${{ env.CI_POSTGRES_USER }}
+          SPRING_DATASOURCE_PASSWORD: ${{ env.CI_POSTGRES_PASSWORD }}
           SPRING_REDIS_HOST: localhost
           SPRING_REDIS_PORT: 6379
         run: mvn -B -Dspring.profiles.active=it verify

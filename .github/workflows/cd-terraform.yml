@@ -163,7 +163,6 @@ jobs:
           name: terraform-plan-${{ env.DEPLOY_ENV }}
           path: |
             infra/terraform-replica/tfplan
-            infra/terraform-replica/ci.auto.tfvars
             target/legal-caseplan-lambda.zip
 
   apply:
