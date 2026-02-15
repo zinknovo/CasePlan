@@ -1,0 +1,212 @@
+name: cd-terraform
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform-replica/**"
+      - "src/**"
+      - "pom.xml"
+      - ".github/workflows/cd-terraform.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/terraform-replica/**"
+      - "src/**"
+      - "pom.xml"
+      - ".github/workflows/cd-terraform.yml"
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment label (e.g. staging/prod)"
+        required: true
+        default: "staging"
+      apply:
+        description: "Run terraform apply"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_WORKING_DIR: infra/terraform-replica
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    env:
+      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+      VPC_ID: ${{ vars.VPC_ID }}
+      LAMBDA_SUBNET_IDS_JSON: ${{ vars.LAMBDA_SUBNET_IDS_JSON }}
+      ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON: ${{ vars.ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON }}
+      RDS_SECURITY_GROUP_ID: ${{ vars.RDS_SECURITY_GROUP_ID }}
+      SQS_VPCE_SECURITY_GROUP_ID: ${{ vars.SQS_VPCE_SECURITY_GROUP_ID }}
+      DATASOURCE_URL: ${{ vars.DATASOURCE_URL }}
+      DATASOURCE_USERNAME: ${{ vars.DATASOURCE_USERNAME }}
+      CORS_ALLOW_ORIGINS_JSON: ${{ vars.CORS_ALLOW_ORIGINS_JSON }}
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+      TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+      DATASOURCE_PASSWORD: ${{ secrets.DATASOURCE_PASSWORD }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION != '' && env.AWS_REGION || 'us-east-2' }}
+
+      - name: Build Lambda Artifact
+        run: mvn -B -DskipTests package
+
+      - name: Validate Required CI Config
+        run: |
+          set -euo pipefail
+          required=(VPC_ID LAMBDA_SUBNET_IDS_JSON RDS_SECURITY_GROUP_ID DATASOURCE_URL DATASOURCE_USERNAME DATASOURCE_PASSWORD TF_STATE_BUCKET TF_STATE_REGION TF_LOCK_TABLE AWS_ROLE_ARN)
+          for key in "${required[@]}"; do
+            if [ -z "${!key:-}" ]; then
+              echo "Missing required config: $key"
+              exit 1
+            fi
+          done
+
+      - name: Render ci.auto.tfvars
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          set -euo pipefail
+          : "${PROJECT_NAME:=caseplan}"
+          : "${AWS_REGION:=us-east-2}"
+          : "${ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON:=[]}"
+          : "${SQS_VPCE_SECURITY_GROUP_ID:=}"
+          : "${CORS_ALLOW_ORIGINS_JSON:=[\"*\"]}"
+          : "${LLM_PROVIDER:=openai}"
+          : "${OPENAI_API_KEY:=}"
+          : "${DEEPSEEK_API_KEY:=}"
+
+          cat > ci.auto.tfvars <<EOF
+          aws_region = "${AWS_REGION}"
+          project_name = "${PROJECT_NAME}"
+          environment = "${DEPLOY_ENV}"
+          vpc_id = "${VPC_ID}"
+          lambda_subnet_ids = ${LAMBDA_SUBNET_IDS_JSON}
+          additional_lambda_security_group_ids = ${ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON}
+          rds_security_group_id = "${RDS_SECURITY_GROUP_ID}"
+          sqs_vpce_security_group_id = "${SQS_VPCE_SECURITY_GROUP_ID}"
+          datasource_url = "${DATASOURCE_URL}"
+          datasource_username = "${DATASOURCE_USERNAME}"
+          datasource_password = "${DATASOURCE_PASSWORD}"
+          llm_provider = "${LLM_PROVIDER}"
+          openai_api_key = "${OPENAI_API_KEY}"
+          deepseek_api_key = "${DEEPSEEK_API_KEY}"
+          cors_allow_origins = ${CORS_ALLOW_ORIGINS_JSON}
+          EOF
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          set -euo pipefail
+          key="${TF_STATE_KEY:-caseplan/${DEPLOY_ENV}/terraform.tfstate}"
+          terraform init -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${key}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_LOCK_TABLE}"
+
+      - name: Terraform Format Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check
+
+      - name: Terraform Validate
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ env.DEPLOY_ENV }}
+          path: |
+            infra/terraform-replica/tfplan
+            infra/terraform-replica/ci.auto.tfvars
+
+  apply:
+    runs-on: ubuntu-latest
+    needs: plan
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.apply == true)
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+    env:
+      DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+      TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
+      TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+      AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.7.5
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION != '' && env.AWS_REGION || 'us-east-2' }}
+
+      - name: Download Plan Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-plan-${{ env.DEPLOY_ENV }}
+          path: infra/terraform-replica
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          set -euo pipefail
+          key="${TF_STATE_KEY:-caseplan/${DEPLOY_ENV}/terraform.tfstate}"
+          terraform init -input=false \
+            -backend-config="bucket=${TF_STATE_BUCKET}" \
+            -backend-config="key=${key}" \
+            -backend-config="region=${TF_STATE_REGION}" \
+            -backend-config="dynamodb_table=${TF_LOCK_TABLE}"
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Terraform Output
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform output
