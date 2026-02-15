@@ -1,0 +1,321 @@
+{
+  "id": null,
+  "uid": "lambda-overview",
+  "title": "Lambda Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-3h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "region",
+        "type": "custom",
+        "current": { "text": "us-east-1", "value": "us-east-1" },
+        "options": [
+          { "text": "us-east-1", "value": "us-east-1", "selected": true },
+          { "text": "us-west-2", "value": "us-west-2", "selected": false }
+        ]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 100,
+      "type": "row",
+      "title": "AWS Lambda Built-in Metrics",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "collapsed": false
+    },
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Lambda Invocations (by Function)",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/Lambda",
+          "metricName": "Invocations",
+          "statistics": ["Sum"],
+          "dimensions": { "FunctionName": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Lambda Avg Duration",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/Lambda",
+          "metricName": "Duration",
+          "statistics": ["Average"],
+          "dimensions": { "FunctionName": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Lambda Errors",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "red" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 50 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/Lambda",
+          "metricName": "Errors",
+          "statistics": ["Sum"],
+          "dimensions": { "FunctionName": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Lambda Throttles",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 1 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 50 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/Lambda",
+          "metricName": "Throttles",
+          "statistics": ["Sum"],
+          "dimensions": { "FunctionName": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "type": "row",
+      "title": "CasePlan Business Metrics (EMF)",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "collapsed": false
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Order Created Rate",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 10 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 50 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "OrderCreated",
+          "statistics": ["Sum"],
+          "dimensions": { "handler": ["CreateOrder"], "status": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Plan Processing (success / failed / skipped)",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 10 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "bars", "fillOpacity": 50, "stacking": { "mode": "normal" } }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "PlansFailed" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "PlansProcessed",
+          "statistics": ["Sum"],
+          "dimensions": { "handler": ["Worker"] },
+          "period": "300",
+          "region": "$region"
+        },
+        {
+          "refId": "B",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "PlansFailed",
+          "statistics": ["Sum"],
+          "dimensions": { "handler": ["Worker"] },
+          "period": "300",
+          "region": "$region"
+        },
+        {
+          "refId": "C",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "PlansSkipped",
+          "statistics": ["Sum"],
+          "dimensions": { "handler": ["Worker"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Handler Latency",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 10 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "HandlerDuration",
+          "statistics": ["Average"],
+          "dimensions": { "handler": ["CreateOrder"] },
+          "period": "300",
+          "region": "$region",
+          "alias": "CreateOrder"
+        },
+        {
+          "refId": "B",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "HandlerDuration",
+          "statistics": ["Average"],
+          "dimensions": { "handler": ["GetOrderStatus"] },
+          "period": "300",
+          "region": "$region",
+          "alias": "GetOrderStatus"
+        },
+        {
+          "refId": "C",
+          "namespace": "CasePlan/Lambda",
+          "metricName": "HandlerDuration",
+          "statistics": ["Average"],
+          "dimensions": { "handler": ["Worker"] },
+          "period": "300",
+          "region": "$region",
+          "alias": "Worker"
+        }
+      ]
+    },
+    {
+      "id": 300,
+      "type": "row",
+      "title": "SQS Queue Metrics",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "collapsed": false
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "SQS Queue Depth",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 20 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/SQS",
+          "metricName": "ApproximateNumberOfMessagesVisible",
+          "statistics": ["Average"],
+          "dimensions": { "QueueName": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "SQS Oldest Message Age",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10 }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "namespace": "AWS/SQS",
+          "metricName": "ApproximateAgeOfOldestMessage",
+          "statistics": ["Maximum"],
+          "dimensions": { "QueueName": ["*"] },
+          "period": "300",
+          "region": "$region"
+        }
+      ]
+    }
+  ]
+}

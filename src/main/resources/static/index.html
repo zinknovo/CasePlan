@@ -283,7 +283,8 @@
 <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
 
-    const API_BASE = "/api/caseplans";
+    const API_BASE = "https://mc94chabh2.execute-api.us-east-2.amazonaws.com";
+    const ORDERS_BASE = API_BASE + "/orders";
     const POLL_MS = 5000;
     const EMPTY_FORM = {
         clientFirstName: "",
@@ -295,7 +296,7 @@
         caseNumber: "",
         primaryCauseOfAction: "",
         opposingParty: "",
-        legalRemedySought: "",
+        remedySought: "",
         additionalCauses: "",
         priorLegalActions: "",
         caseDocuments: ""
@@ -316,12 +317,17 @@
                 setLoading(true);
             }
             try {
-                const res = await fetch(API_BASE);
+                const res = await fetch(ORDERS_BASE);
                 if (!res.ok) {
                     throw new Error("Failed to load plans (" + res.status + ")");
                 }
                 const data = await res.json();
-                setPlans(Array.isArray(data) ? data : []);
+                const list = Array.isArray(data)
+                    ? data
+                    : Array.isArray(data && data.items)
+                        ? data.items
+                        : [];
+                setPlans(list);
                 if (!silent) {
                     setError("");
                 }
@@ -352,7 +358,7 @@
             setError("");
             setInfo("");
             try {
-                const res = await fetch(API_BASE, {
+                const res = await fetch(ORDERS_BASE, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(form)
@@ -380,7 +386,7 @@
             setViewing(true);
             setError("");
             try {
-                const res = await fetch(API_BASE + "/" + id);
+                const res = await fetch(ORDERS_BASE + "/" + id);
                 if (!res.ok) {
                     throw new Error("Failed to load plan content");
                 }
@@ -432,7 +438,7 @@
                             <Field label="Case Number (Optional)" value={form.caseNumber} onChange={v => updateField("caseNumber", v)} />
                             <Field label="Primary Cause of Action *" value={form.primaryCauseOfAction} onChange={v => updateField("primaryCauseOfAction", v)} />
                             <Field label="Opposing Party" value={form.opposingParty} onChange={v => updateField("opposingParty", v)} extraClass="full" />
-                            <Field label="Legal Remedy Sought *" value={form.legalRemedySought} onChange={v => updateField("legalRemedySought", v)} extraClass="full" />
+                            <Field label="Remedy Sought *" value={form.remedySought} onChange={v => updateField("remedySought", v)} extraClass="full" />
                             <Field label="Additional Causes" value={form.additionalCauses} onChange={v => updateField("additionalCauses", v)} />
                             <Field label="Prior Legal Actions" value={form.priorLegalActions} onChange={v => updateField("priorLegalActions", v)} />
                             <TextAreaField label="Case Documents / Notes" value={form.caseDocuments} onChange={v => updateField("caseDocuments", v)} extraClass="full" />

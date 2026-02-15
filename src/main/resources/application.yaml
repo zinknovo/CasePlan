@@ -24,6 +24,13 @@ management:
     tags:
       application: caseplan
 
+# Queue abstraction: set queue.provider to "redis" (local) or "sqs" (AWS Lambda)
+queue:
+  provider: ${QUEUE_PROVIDER:redis}
+  sqs:
+    queue-url: ${QUEUE_URL:}
+    region: ${AWS_REGION:us-east-2}
+
 # LLM abstraction: set llm.provider to "openai" (DeepSeek/OpenAI) or "claude"
 llm:
   provider: ${LLM_PROVIDER:openai}

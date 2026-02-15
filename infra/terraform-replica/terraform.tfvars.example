@@ -1,0 +1,26 @@
+aws_region = "us-east-2"
+
+project_name = "caseplan"
+environment  = "replica"
+
+vpc_id = "vpc-xxxxxxxx"
+lambda_subnet_ids = [
+  "subnet-aaaaaaaa",
+  "subnet-bbbbbbbb"
+]
+rds_security_group_id = "sg-xxxxxxxx"
+
+datasource_url      = "jdbc:postgresql://your-rds-endpoint:5432/caseplan"
+datasource_username = "dev_caseplan"
+datasource_password = "REPLACE_ME"
+
+# Optional, for worker LLM call
+llm_provider    = "openai"
+openai_api_key  = ""
+deepseek_api_key = ""
+
+cors_allow_origins = [
+  "https://your-frontend-domain"
+]
+
+sqs_vpce_security_group_id = "sg-vpce-sqs-xxxxxxxx"

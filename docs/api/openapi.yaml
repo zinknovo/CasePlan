@@ -1,0 +1,518 @@
+openapi: 3.0.3
+info:
+  title: CasePlan API
+  version: 1.0.0
+  description: |
+    Backend API contract for CasePlan web endpoints.
+servers:
+  - url: http://localhost:8080
+tags:
+  - name: Clients
+  - name: Attorneys
+  - name: CasePlans
+  - name: Intake
+paths:
+  /api/clients:
+    get:
+      tags: [Clients]
+      summary: List clients (paginated)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/pageSize'
+      responses:
+        '200':
+          description: Client page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageClient'
+    post:
+      tags: [Clients]
+      summary: Create client
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClientRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '200':
+          description: Existing client matched (idempotent duplicate)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict (duplicate mismatch)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/clients/{id}:
+    get:
+      tags: [Clients]
+      summary: Get client by id
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '404':
+          description: Not found
+    put:
+      tags: [Clients]
+      summary: Update client
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateClientRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not found
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Clients]
+      summary: Delete client
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '204':
+          description: Deleted
+        '404':
+          description: Not found
+
+  /api/clients/{id}/caseplans:
+    get:
+      tags: [Clients]
+      summary: List all caseplans for a client
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/pageSize'
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Client caseplans page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCasePlan'
+
+  /api/attorneys:
+    post:
+      tags: [Attorneys]
+      summary: Create attorney
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAttorneyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attorney'
+        '200':
+          description: Existing attorney matched
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attorney'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/caseplans:
+    get:
+      tags: [CasePlans]
+      summary: List caseplans (paginated)
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/pageSize'
+        - in: query
+          name: status
+          schema:
+            type: string
+        - in: query
+          name: patient_name
+          schema:
+            type: string
+      responses:
+        '200':
+          description: CasePlan page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PageCasePlan'
+    post:
+      tags: [CasePlans]
+      summary: Create caseplan order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCasePlanRequest'
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: Bad request
+        '409':
+          description: Conflict
+
+  /api/caseplans/{id}:
+    get:
+      tags: [CasePlans]
+      summary: Get caseplan by id
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CasePlan'
+        '404':
+          description: Not found
+
+  /api/caseplans/{id}/status:
+    get:
+      tags: [CasePlans]
+      summary: Get caseplan status
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Status payload
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '404':
+          description: Not found
+
+  /api/caseplans/{id}/download:
+    get:
+      tags: [CasePlans]
+      summary: Download generated caseplan (completed only)
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '200':
+          description: Download text file
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Not found
+        '409':
+          description: Caseplan not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/caseplans/{id}/retry:
+    post:
+      tags: [CasePlans]
+      summary: Retry failed caseplan generation (async)
+      parameters:
+        - $ref: '#/components/parameters/idPath'
+      responses:
+        '202':
+          description: Retry accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    format: int64
+                  status:
+                    type: string
+                  message:
+                    type: string
+        '404':
+          description: Not found
+        '409':
+          description: Retry not allowed for non-failed status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/intake:
+    post:
+      tags: [Intake]
+      summary: Normalize external intake payload
+      parameters:
+        - in: query
+          name: source
+          required: true
+          schema:
+            type: string
+            enum: [jsonA, jsonB, xml]
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              type: string
+      responses:
+        '201':
+          description: Normalized order
+        '404':
+          description: Unknown source
+
+components:
+  parameters:
+    idPath:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: integer
+        format: int64
+    page:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        default: 1
+    pageSize:
+      in: query
+      name: page_size
+      required: false
+      schema:
+        type: integer
+        default: 20
+  schemas:
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        firstName:
+          type: string
+        lastName:
+          type: string
+        idNumber:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    Attorney:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        barNumber:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CasePlan:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        status:
+          type: string
+        generatedPlan:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateClientRequest:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        idNumber:
+          type: string
+          nullable: true
+    UpdateClientRequest:
+      type: object
+      required: [firstName, lastName]
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        idNumber:
+          type: string
+          nullable: true
+    CreateAttorneyRequest:
+      type: object
+      required: [name, barNumber]
+      properties:
+        name:
+          type: string
+        barNumber:
+          type: string
+    CreateCasePlanRequest:
+      type: object
+      required:
+        - clientFirstName
+        - clientLastName
+        - attorneyName
+        - barNumber
+        - primaryCauseOfAction
+        - remedySought
+      properties:
+        clientFirstName:
+          type: string
+        clientLastName:
+          type: string
+        clientIdNumber:
+          type: string
+          nullable: true
+        attorneyName:
+          type: string
+        barNumber:
+          type: string
+        referringSource:
+          type: string
+          nullable: true
+        caseNumber:
+          type: string
+          nullable: true
+        primaryCauseOfAction:
+          type: string
+        opposingParty:
+          type: string
+          nullable: true
+        remedySought:
+          type: string
+        additionalCauses:
+          type: string
+          nullable: true
+        priorLegalActions:
+          type: string
+          nullable: true
+        caseDocuments:
+          type: string
+          nullable: true
+        confirm:
+          type: boolean
+          nullable: true
+    PageClient:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Client'
+    PageCasePlan:
+      type: object
+      properties:
+        count:
+          type: integer
+          format: int64
+        page:
+          type: integer
+        page_size:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CasePlan'
+    ErrorResponse:
+      type: object
+      properties:
+        type:
+          type: string
+        code:
+          type: string
+        message:
+          type: string
+        detail:
+          nullable: true
+          oneOf:
+            - type: object
+            - type: array
+              items:
+                type: object

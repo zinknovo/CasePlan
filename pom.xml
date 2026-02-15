@@ -73,6 +73,26 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-core</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-lambda-java-events</artifactId>
+            <version>3.11.4</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>sqs</artifactId>
+            <version>2.25.70</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>url-connection-client</artifactId>
+            <version>2.25.70</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <exclusions>
@@ -208,8 +228,8 @@
                 <configuration>
                     <excludes>
                         <exclude>com/caseplan/App.class</exclude>
-                        <exclude>com/caseplan/integration/llm/LLMConfig.class</exclude>
-                        <exclude>com/caseplan/integration/consumer/CasePlanConsumer*.class</exclude>
+                        <exclude>com/caseplan/adapter/out/llm/LLMConfig.class</exclude>
+                        <exclude>com/caseplan/adapter/in/queue/CasePlanConsumer*.class</exclude>
                     </excludes>
                 </configuration>
                 <executions>

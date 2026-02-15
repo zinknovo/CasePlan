@@ -2,7 +2,19 @@ name: ci
 
 on:
   push:
+    paths:
+      - "src/**"
+      - "pom.xml"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - ".github/workflows/ci.yml"
   pull_request:
+    paths:
+      - "src/**"
+      - "pom.xml"
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - ".github/workflows/ci.yml"
 
 jobs:
   test:
