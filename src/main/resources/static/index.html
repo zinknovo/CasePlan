@@ -304,6 +304,9 @@
     const API_BASE = "https://mc94chabh2.execute-api.us-east-2.amazonaws.com";
     const ORDERS_BASE = API_BASE + "/orders";
     const POLL_MS = 5000;
+    const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]{0,49}$/;
+    const BAR_NUMBER_REGEX = /^BAR-\d{8}-\d{4}$/;
+    const DOCKET_NUMBER_REGEX = /^[A-Za-z0-9][A-Za-z0-9-]{1,39}$/;
     const EMPTY_FORM = {
         clientFirstName: "",
         clientLastName: "",
@@ -328,7 +331,9 @@
         const [error, setError] = useState("");
         const [info, setInfo] = useState("");
         const [modalPlan, setModalPlan] = useState(null);
-        const [viewing, setViewing] = useState(false);
+        const [viewingId, setViewingId] = useState(null);
+        const [planDetails, setPlanDetails] = useState({});
+        const [detailLoading, setDetailLoading] = useState({});
 
         async function fetchPlans(silent) {
             if (!silent) {
@@ -346,6 +351,7 @@
                         ? data.items
                         : [];
                 setPlans(list);
+                prefetchCompletedPlanDetails(list);
                 if (!silent) {
                     setError("");
                 }
@@ -370,10 +376,96 @@
             setForm(prev => ({ ...prev, [key]: value }));
         }
 
+        function validateForm(payload) {
+            if (!(payload.clientFirstName || "").trim()) {
+                return "Client first name is required.";
+            }
+            if (!(payload.clientLastName || "").trim()) {
+                return "Client last name is required.";
+            }
+            if (!(payload.attorneyName || "").trim()) {
+                return "Attorney name is required.";
+            }
+            if (!(payload.barNumber || "").trim()) {
+                return "Bar number is required.";
+            }
+            if (!(payload.primaryCauseOfAction || "").trim()) {
+                return "Primary cause of action is required.";
+            }
+            if (!(payload.remedySought || "").trim()) {
+                return "Remedy sought is required.";
+            }
+            if (!NAME_REGEX.test(payload.clientFirstName || "")) {
+                return "Client first name can only contain letters, spaces, apostrophes, periods, and hyphens.";
+            }
+            if (!NAME_REGEX.test(payload.clientLastName || "")) {
+                return "Client last name can only contain letters, spaces, apostrophes, periods, and hyphens.";
+            }
+            if (!NAME_REGEX.test(payload.attorneyName || "")) {
+                return "Attorney name can only contain letters, spaces, apostrophes, periods, and hyphens.";
+            }
+            if (!BAR_NUMBER_REGEX.test(payload.barNumber || "")) {
+                return "Bar number must match BAR-12345678-1234.";
+            }
+            if (payload.docketNumber && !DOCKET_NUMBER_REGEX.test(payload.docketNumber)) {
+                return "Docket number format is invalid.";
+            }
+            return "";
+        }
+
+        function hasGeneratedContent(plan) {
+            return Boolean(extractPlanContent(plan));
+        }
+
+        async function fetchPlanDetail(id, silent) {
+            if (!id) {
+                return null;
+            }
+            setDetailLoading(prev => ({ ...prev, [id]: true }));
+            try {
+                const res = await fetch(ORDERS_BASE + "/" + id);
+                if (!res.ok) {
+                    throw new Error("Failed to load plan content");
+                }
+                const data = await res.json();
+                if (hasGeneratedContent(data)) {
+                    setPlanDetails(prev => ({ ...prev, [id]: data }));
+                }
+                return data;
+            } catch (e) {
+                if (!silent) {
+                    setError(e.message || "Failed to load plan content");
+                }
+                return null;
+            } finally {
+                setDetailLoading(prev => ({ ...prev, [id]: false }));
+            }
+        }
+
+        function prefetchCompletedPlanDetails(list) {
+            const completed = list
+                .filter(p => p && p.status === "completed" && p.id)
+                .slice(0, 10);
+            for (const plan of completed) {
+                if (planDetails[plan.id] && hasGeneratedContent(planDetails[plan.id])) {
+                    continue;
+                }
+                if (detailLoading[plan.id]) {
+                    continue;
+                }
+                fetchPlanDetail(plan.id, true);
+            }
+        }
+
         async function handleSubmit(e) {
             e.preventDefault();
             setError("");
             const payload = { ...form };
+            const validationError = validateForm(payload);
+            if (validationError) {
+                setError(validationError);
+                return;
+            }
             setForm(EMPTY_FORM);
             setPendingCreates(prev => prev + 1);
             setInfo("Submitting in background. You can enter the next case now.");
@@ -430,30 +522,32 @@
         }
 
         async function handleView(id) {
-            setViewing(true);
+            setViewingId(id);
             setError("");
             try {
-                const res = await fetch(ORDERS_BASE + "/" + id);
-                if (!res.ok) {
-                    throw new Error("Failed to load plan content");
+                const cached = planDetails[id];
+                const data = cached && hasGeneratedContent(cached)
+                    ? cached
+                    : await fetchPlanDetail(id, false);
+                if (!data) {
+                    return;
                 }
-                const data = await res.json();
                 setModalPlan(data);
-            } catch (e) {
-                setError(e.message || "Failed to load plan content");
             } finally {
-                setViewing(false);
+                setViewingId(null);
             }
         }
 
         async function handleDownloadById(id) {
             setError("");
             try {
-                const res = await fetch(ORDERS_BASE + "/" + id);
-                if (!res.ok) {
-                    throw new Error("Failed to load plan content");
+                const cached = planDetails[id];
+                const data = cached && hasGeneratedContent(cached)
+                    ? cached
+                    : await fetchPlanDetail(id, false);
+                if (!data) {
+                    return;
                 }
-                const data = await res.json();
                 handleDownload(data);
             } catch (e) {
                 setError(e.message || "Failed to download plan");
@@ -489,18 +583,18 @@
                     <h1 className="panel-title">Case Plan Intake</h1>
                     {error && <div className="msg error">{error}</div>}
                     {info && <div className="msg info">{info}</div>}
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} noValidate>
                         <div className="form-grid">
-                            <Field label="Client First Name *" value={form.clientFirstName} onChange={v => updateField("clientFirstName", v)} />
-                            <Field label="Client Last Name *" value={form.clientLastName} onChange={v => updateField("clientLastName", v)} />
+                            <Field label="Client First Name *" value={form.clientFirstName} onChange={v => updateField("clientFirstName", v)} required pattern="[A-Za-z][A-Za-z .'-]{0,49}" title="Letters/spaces only (plus . ' -)" />
+                            <Field label="Client Last Name *" value={form.clientLastName} onChange={v => updateField("clientLastName", v)} required pattern="[A-Za-z][A-Za-z .'-]{0,49}" title="Letters/spaces only (plus . ' -)" />
                             <Field label="Client ID Number" value={form.clientIdNumber} onChange={v => updateField("clientIdNumber", v)} />
-                            <Field label="Attorney Name *" value={form.attorneyName} onChange={v => updateField("attorneyName", v)} />
-                            <Field label="Bar Number * (e.g. BAR-12345678-1234)" value={form.barNumber} onChange={v => updateField("barNumber", v)} />
+                            <Field label="Attorney Name *" value={form.attorneyName} onChange={v => updateField("attorneyName", v)} required pattern="[A-Za-z][A-Za-z .'-]{0,49}" title="Letters/spaces only (plus . ' -)" />
+                            <Field label="Bar Number * (e.g. BAR-12345678-1234)" value={form.barNumber} onChange={v => updateField("barNumber", v)} required pattern="BAR-[0-9]{8}-[0-9]{4}" title="Format: BAR-12345678-1234" />
                             <Field label="Referring Source" value={form.referringSource} onChange={v => updateField("referringSource", v)} />
-                            <Field label="Docket Number (Optional, e.g. 2026-CV-123456)" value={form.docketNumber} onChange={v => updateField("docketNumber", v)} />
-                            <Field label="Primary Cause of Action *" value={form.primaryCauseOfAction} onChange={v => updateField("primaryCauseOfAction", v)} />
+                            <Field label="Docket Number (Optional, e.g. 2026-CV-123456)" value={form.docketNumber} onChange={v => updateField("docketNumber", v)} pattern="[A-Za-z0-9][A-Za-z0-9-]{1,39}" title="Letters/numbers/hyphen only" />
+                            <Field label="Primary Cause of Action *" value={form.primaryCauseOfAction} onChange={v => updateField("primaryCauseOfAction", v)} required />
                             <Field label="Opposing Party" value={form.opposingParty} onChange={v => updateField("opposingParty", v)} extraClass="full" />
-                            <Field label="Remedy Sought *" value={form.remedySought} onChange={v => updateField("remedySought", v)} extraClass="full" />
+                            <Field label="Remedy Sought *" value={form.remedySought} onChange={v => updateField("remedySought", v)} extraClass="full" required />
                             <Field label="Additional Causes" value={form.additionalCauses} onChange={v => updateField("additionalCauses", v)} />
                             <Field label="Prior Legal Actions" value={form.priorLegalActions} onChange={v => updateField("priorLegalActions", v)} />
                             <TextAreaField label="Case Documents / Notes" value={form.caseDocuments} onChange={v => updateField("caseDocuments", v)} extraClass="full" />
@@ -547,6 +641,8 @@
                                     const serviceNumber = caseInfo.serviceNumber || "-";
                                     const isCompleted = plan.status === "completed";
                                     const isFailed = plan.status === "failed";
+                                    const detailReady = Boolean(planDetails[plan.id] && hasGeneratedContent(planDetails[plan.id]));
+                                    const isPreparing = Boolean(detailLoading[plan.id]) || (isCompleted && !detailReady);
                                     return (
                                         <tr key={plan.id}>
                                             <td>{plan.id}</td>
@@ -568,8 +664,8 @@
                                                 <div className="row-actions">
                                                     {isCompleted && (
                                                         <>
-                                                            <button className="btn btn-secondary" onClick={() => handleView(plan.id)} disabled={viewing}>
-                                                                {viewing ? "Loading..." : "View"}
+                                                            <button className="btn btn-secondary" onClick={() => handleView(plan.id)} disabled={Boolean(viewingId) || isPreparing}>
+                                                                {viewingId === plan.id ? "Loading..." : isPreparing ? "Preparing..." : "View"}
                                                             </button>
                                                             <button className="btn btn-secondary" onClick={() => handleDownloadById(plan.id)}>Download .doc</button>
                                                         </>
@@ -610,11 +706,19 @@
         );
     }
 
-    function Field({ label, value, onChange, extraClass, placeholder }) {
+    function Field({ label, value, onChange, extraClass, placeholder, pattern, title, required }) {
         return (
             <div className={extraClass || ""}>
                 <label>{label}</label>
-                <input aria-label={label} value={value} placeholder={placeholder || ""} onChange={e => onChange(e.target.value)} />
+                <input
+                    aria-label={label}
+                    value={value}
+                    placeholder={placeholder || ""}
+                    pattern={pattern}
+                    title={title}
+                    required={required}
+                    onChange={e => onChange(e.target.value)}
+                />
             </div>
         );
     }

@@ -222,7 +222,7 @@ public class CasePlanFlowIT {
     }
 
     private long createCasePlan() throws Exception {
-        return createCasePlanWithBarNumber("BAR-IT-001");
+        return createCasePlanWithBarNumber("BAR-12345678-1001");
     }
 
     private long createCasePlanWithBarNumber(String barNumber) throws Exception {

@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Path;
+import javax.validation.Validation;
 import javax.validation.Validator;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,13 +24,15 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class CreateOrderHandlerTest {
 
     private APIGatewayProxyRequestEvent validRequest() {
         APIGatewayProxyRequestEvent req = new APIGatewayProxyRequestEvent();
-        req.setBody("{\"clientFirstName\":\"John\",\"clientLastName\":\"Doe\",\"attorneyName\":\"Atty\",\"barNumber\":\"BAR1\",\"primaryCauseOfAction\":\"Contract\",\"remedySought\":\"Comp\"}");
+        req.setBody("{\"clientFirstName\":\"John\",\"clientLastName\":\"Doe\",\"attorneyName\":\"Atty\",\"barNumber\":\"BAR-12345678-1234\",\"primaryCauseOfAction\":\"Contract\",\"remedySought\":\"Comp\"}");
         return req;
     }
 
@@ -171,5 +174,20 @@ public class CreateOrderHandlerTest {
         CreateOrderHandler handler = new CreateOrderHandler(controller, validator);
         APIGatewayProxyResponseEvent res = handler.handleRequest(validRequest(), null);
         assertEquals(Integer.valueOf(500), res.getStatusCode());
+    }
+
+    @Test
+    public void handleRequest_invalidBarNumber_returns400() {
+        CasePlanController controller = mock(CasePlanController.class);
+        Validator realValidator = Validation.buildDefaultValidatorFactory().getValidator();
+        CreateOrderHandler handler = new CreateOrderHandler(controller, realValidator);
+
+        APIGatewayProxyRequestEvent req = new APIGatewayProxyRequestEvent();
+        req.setBody("{\"clientFirstName\":\"John\",\"clientLastName\":\"Doe\",\"attorneyName\":\"Atty\",\"barNumber\":\"BAD-BAR\",\"primaryCauseOfAction\":\"Contract\",\"remedySought\":\"Comp\"}");
+        APIGatewayProxyResponseEvent res = handler.handleRequest(req, null);
+
+        assertEquals(Integer.valueOf(400), res.getStatusCode());
+        assertTrue(res.getBody().contains("barNumber"));
+        verify(controller, never()).create(any(CreateCasePlanRequest.class));
     }
 }

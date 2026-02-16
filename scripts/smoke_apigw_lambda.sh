@@ -49,9 +49,10 @@ PY
 }
 
 echo "[1/3] POST /orders"
-run_id="$(date +%s)"
+bar_left="$(date +%m%d%H%M)"
+bar_right="$(date +%S)$((RANDOM % 10))$((RANDOM % 10))"
 post_body="$(cat <<JSON
-{"clientFirstName":"Smoke","clientLastName":"Glue","attorneyName":"Smoke Atty","barNumber":"BAR-SMOKE-${run_id}","primaryCauseOfAction":"Contract","remedySought":"Compensation"}
+{"clientFirstName":"Smoke","clientLastName":"Glue","attorneyName":"Smoke Atty","barNumber":"BAR-${bar_left}-${bar_right}","primaryCauseOfAction":"Contract","remedySought":"Compensation"}
 JSON
 )"
 code="$(request POST "/orders" "$post_body")"

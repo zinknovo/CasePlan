@@ -74,6 +74,18 @@ test("ui submit flow: queued ack + keep intake available", async ({ page }) => {
     await route.fallback();
   });
 
+  await page.route("**/orders/101", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: 101,
+        status: "completed",
+        generatedPlan: "# Warmed preview"
+      })
+    });
+  });
+
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   const barInput = page.getByLabel("Bar Number * (e.g. BAR-12345678-1234)");
@@ -141,6 +153,9 @@ test("ui criticals: service number visible, view rendered, download doc", async 
     has: page.locator(".status.completed")
   });
   await expect(firstCompletedRow.first()).toContainText("#SRV-20260216-0001");
+  await expect(
+    firstCompletedRow.first().getByRole("button", { name: "View" })
+  ).toBeEnabled();
 
   await firstCompletedRow
     .first()
@@ -157,4 +172,49 @@ test("ui criticals: service number visible, view rendered, download doc", async 
     .click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/\.doc$/);
+});
+
+test("ui validation: invalid bar number is blocked before submit", async ({
+  page
+}) => {
+  let postCalled = false;
+
+  await page.route("**/orders", async (route) => {
+    const method = route.request().method();
+    if (method === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ count: 0, items: [] })
+      });
+      return;
+    }
+    if (method === "POST") {
+      postCalled = true;
+      await route.fulfill({
+        status: 201,
+        contentType: "application/json",
+        body: JSON.stringify({ id: 999, status: "pending", message: "queued" })
+      });
+      return;
+    }
+    await route.fallback();
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  await page.getByLabel("Client First Name *").fill("Olivia");
+  await page.getByLabel("Client Last Name *").fill("Martin");
+  await page.getByLabel("Attorney Name *").fill("Mason Reed");
+  await page
+    .getByLabel("Bar Number * (e.g. BAR-12345678-1234)")
+    .fill("BAD-BAR");
+  await page.getByLabel("Primary Cause of Action *").fill("Personal Injury");
+  await page.getByLabel("Remedy Sought *").fill("Compensation");
+
+  await page.getByRole("button", { name: "Submit Case" }).click();
+  await expect(
+    page.getByText("Bar number must match BAR-12345678-1234.")
+  ).toBeVisible();
+  expect(postCalled).toBeFalsy();
 });
