@@ -239,9 +239,13 @@ terraform destroy
 
 - push main（基础设施/源码变更）、PR 或手动 `workflow_dispatch` 触发
 - 使用 **GitHub OIDC** 认证 AWS IAM Role（无静态密钥）
-- 流程：构建 Lambda 包 → 校验配置 → 渲染 tfvars → Terraform init/plan
+- 流程：构建 Lambda 包 + 前端 E2E → 校验配置 → 渲染 tfvars → Terraform init/plan
 - `apply` 任务仅在 push main 或手动触发且 `apply=true` 时执行
 - Terraform state 存储在 S3 + DynamoDB 锁
+- `apply` 后会自动发布前端 `src/main/resources/static/index.html` 到 S3，并触发 CloudFront 失效
+- 前端发布目标支持仓库变量（可选）：
+  - `FRONTEND_S3_BUCKET`（默认：`caseplan-frontend-727766004034-use2`）
+  - `FRONTEND_DISTRIBUTION_ID`（默认：`E23XI74DK4D2MF`）
 
 ### 分支保护（Ruleset）
 

@@ -545,7 +545,6 @@
                                     const client = caseInfo.client || {};
                                     const attorney = caseInfo.attorney || {};
                                     const serviceNumber = caseInfo.serviceNumber || "-";
-                                    const docketNumber = caseInfo.docketNumber || caseInfo.caseNumber || "-";
                                     const isCompleted = plan.status === "completed";
                                     const isFailed = plan.status === "failed";
                                     return (
@@ -553,8 +552,7 @@
                                             <td>{plan.id}</td>
                                             <td>
                                                 <div>{client.firstName || ""} {client.lastName || ""}</div>
-                                                <div className="hint">Service #{serviceNumber}</div>
-                                                <div className="hint">Docket #{docketNumber}</div>
+                                                <div className="hint">#{serviceNumber}</div>
                                             </td>
                                             <td>{caseInfo.primaryCauseOfAction || "-"}</td>
                                             <td>

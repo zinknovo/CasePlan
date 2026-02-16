@@ -101,7 +101,7 @@ test("ui submit flow: queued ack + keep intake available", async ({ page }) => {
 
   const firstRow = page.locator("tbody tr").first();
   await expect(firstRow).toContainText("Olivia Martin");
-  await expect(firstRow).toContainText("Service #SRV-20260216-0002");
+  await expect(firstRow).toContainText("#SRV-20260216-0002");
   await expect(firstRow.locator(".status.pending")).toBeVisible();
 
   await expect(page.getByRole("button", { name: "Submit Case" })).toBeEnabled();
@@ -140,7 +140,7 @@ test("ui criticals: service number visible, view rendered, download doc", async 
   const firstCompletedRow = page.locator("tbody tr", {
     has: page.locator(".status.completed")
   });
-  await expect(firstCompletedRow.first()).toContainText("Service #SRV-20260216-0001");
+  await expect(firstCompletedRow.first()).toContainText("#SRV-20260216-0001");
 
   await firstCompletedRow
     .first()
