@@ -17,6 +17,11 @@ Desktop.ini
 # Logs
 *.log
 
+# Node / frontend test outputs
+node_modules/
+playwright-report/
+test-results/
+
 # Maven
 target/
 
