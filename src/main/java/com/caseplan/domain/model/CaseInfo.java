@@ -27,7 +27,10 @@ public class CaseInfo {
     @JoinColumn(name = "attorney_id")
     private Attorney attorney;
 
+    @Column(name = "case_number")
     private String caseNumber;
+    @Column(name = "service_number")
+    private String serviceNumber;
     private String primaryCauseOfAction;
     private String opposingParty;
     @Column(name = "legal_remedy_sought")

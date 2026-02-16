@@ -5,7 +5,11 @@ on:
     paths:
       - "infra/terraform-replica/**"
       - "src/**"
+      - "tests/**"
       - "pom.xml"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.js"
       - ".github/workflows/cd-terraform.yml"
   push:
     branches:
@@ -13,7 +17,11 @@ on:
     paths:
       - "infra/terraform-replica/**"
       - "src/**"
+      - "tests/**"
       - "pom.xml"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.js"
       - ".github/workflows/cd-terraform.yml"
   workflow_dispatch:
     inputs:
@@ -68,6 +76,21 @@ jobs:
           distribution: temurin
           java-version: "11"
           cache: maven
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install JS Dependencies
+        run: npm ci
+
+      - name: Install Playwright Browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Frontend E2E
+        run: npm run test:e2e
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3

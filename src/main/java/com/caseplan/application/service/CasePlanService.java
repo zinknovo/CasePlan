@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,9 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CasePlanService {
 
+    private static final String SERVICE_NUMBER_PREFIX = "SRV-";
+    private static final DateTimeFormatter SERVICE_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
+
     private final CasePlanRepo casePlanRepo;
     private final CaseInfoRepo caseInfoRepo;
     private final ClientRepo clientRepo;
@@ -32,7 +36,13 @@ public class CasePlanService {
     private final QueuePort queuePort;
 
     public List<CasePlan> listAll() {
-        return casePlanRepo.findAllByOrderByCreatedAtDesc();
+        List<CasePlan> plans = casePlanRepo.findAllByOrderByCreatedAtDesc();
+        for (CasePlan plan : plans) {
+            if (plan != null) {
+                ensureServiceNumber(plan.getCaseInfo());
+            }
+        }
+        return plans;
     }
 
     public Page<CasePlan> listPage(int page, int pageSize, String status, String patientName) {
@@ -148,7 +158,8 @@ public class CasePlanService {
         CaseInfo caseInfo = new CaseInfo();
         caseInfo.setClient(client);
         caseInfo.setAttorney(attorney);
-        caseInfo.setCaseNumber(normalizeOptional(command.getCaseNumber()));
+        caseInfo.setCaseNumber(normalizeOptional(command.getDocketNumber()));
+        caseInfo.setServiceNumber(generateNextServiceNumber(today));
         caseInfo.setPrimaryCauseOfAction(command.getPrimaryCauseOfAction());
         caseInfo.setOpposingParty(command.getOpposingParty());
         caseInfo.setRemedySought(command.getRemedySought());
@@ -212,6 +223,49 @@ public class CasePlanService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void ensureServiceNumber(CaseInfo caseInfo) {
+        if (caseInfo == null || hasText(caseInfo.getServiceNumber())) {
+            return;
+        }
+        LocalDate date = caseInfo.getCreatedAt() == null
+                ? LocalDate.now()
+                : caseInfo.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate();
+        caseInfo.setServiceNumber(generateNextServiceNumber(date));
+        caseInfoRepo.save(caseInfo);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private String generateNextServiceNumber(LocalDate date) {
+        String prefix = SERVICE_NUMBER_PREFIX + date.format(SERVICE_DATE_FORMATTER) + "-";
+        Optional<CaseInfo> latest = Optional.ofNullable(
+                caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc(prefix))
+                .orElse(Optional.empty());
+
+        int next = latest
+                .map(CaseInfo::getServiceNumber)
+                .map(this::extractServiceSequence)
+                .orElse(0) + 1;
+        return prefix + String.format("%04d", next);
+    }
+
+    private int extractServiceSequence(String serviceNumber) {
+        if (serviceNumber == null) {
+            return 0;
+        }
+        int lastDash = serviceNumber.lastIndexOf('-');
+        if (lastDash < 0 || lastDash == serviceNumber.length() - 1) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(serviceNumber.substring(lastDash + 1));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
     }
 
     @SuppressWarnings("null")

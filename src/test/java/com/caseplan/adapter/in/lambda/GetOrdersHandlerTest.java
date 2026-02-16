@@ -32,6 +32,8 @@ public class GetOrdersHandlerTest {
         assertTrue(res.getBody().contains("\"id\":9"));
         assertTrue(res.getBody().contains("\"status\":\"completed\""));
         assertTrue(res.getBody().contains("\"clientName\":\"Mia Johnson\""));
+        assertTrue(res.getBody().contains("\"serviceNumber\":\"SRV-20260216-0001\""));
+        assertTrue(res.getBody().contains("\"docketNumber\":\"2026-CV-123456\""));
     }
 
     @Test
@@ -65,7 +67,8 @@ public class GetOrdersHandlerTest {
         attorney.setBarNumber("BAR-1");
 
         CaseInfo info = new CaseInfo();
-        info.setCaseNumber("CP-1");
+        info.setCaseNumber("2026-CV-123456");
+        info.setServiceNumber("SRV-20260216-0001");
         info.setPrimaryCauseOfAction("Contract");
         info.setRemedySought("Damages");
         info.setClient(client);

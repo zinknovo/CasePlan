@@ -12,7 +12,7 @@ public class CreateCasePlanCommand {
     private String attorneyName;
     private String barNumber;
     private String referringSource;
-    private String caseNumber;
+    private String docketNumber;
     private String primaryCauseOfAction;
     private String opposingParty;
     private String remedySought;

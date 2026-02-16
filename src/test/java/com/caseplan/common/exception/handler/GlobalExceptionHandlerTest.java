@@ -122,7 +122,7 @@ public class GlobalExceptionHandlerTest {
     public void handleRequestValidationFailure_returns400WithFieldErrors() throws Exception {
         BeanPropertyBindingResult bindingResult = new BeanPropertyBindingResult(new Object(), "request");
         bindingResult.addError(new FieldError("request", "clientFirstName", "Client first name is required"));
-        bindingResult.addError(new FieldError("request", "caseNumber", "Case number must be 6 digits"));
+        bindingResult.addError(new FieldError("request", "docketNumber", "Docket number must be 6 digits"));
 
         MethodParameter param = new MethodParameter(
                 this.getClass().getDeclaredMethod("handleRequestValidationFailure_returns400WithFieldErrors"), -1);
@@ -138,6 +138,6 @@ public class GlobalExceptionHandlerTest {
         List<Map<String, String>> fieldErrors = (List<Map<String, String>>) response.getBody().get("detail");
         assertEquals(2, fieldErrors.size());
         assertEquals("clientFirstName", fieldErrors.get(0).get("field"));
-        assertEquals("caseNumber", fieldErrors.get(1).get("field"));
+        assertEquals("docketNumber", fieldErrors.get(1).get("field"));
     }
 }

@@ -105,7 +105,7 @@ public class CasePlanController {
         command.setAttorneyName(request.getAttorneyName());
         command.setBarNumber(request.getBarNumber());
         command.setReferringSource(request.getReferringSource());
-        command.setCaseNumber(request.getCaseNumber());
+        command.setDocketNumber(request.getDocketNumber());
         command.setPrimaryCauseOfAction(request.getPrimaryCauseOfAction());
         command.setOpposingParty(request.getOpposingParty());
         command.setRemedySought(request.getRemedySought());

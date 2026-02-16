@@ -311,7 +311,7 @@
         attorneyName: "",
         barNumber: "",
         referringSource: "",
-        caseNumber: "",
+        docketNumber: "",
         primaryCauseOfAction: "",
         opposingParty: "",
         remedySought: "",
@@ -401,7 +401,8 @@
                             status: (body && body.status) || "pending",
                             createdAt: new Date().toISOString(),
                             caseInfo: {
-                                caseNumber: payload.caseNumber || "",
+                                docketNumber: payload.docketNumber || "",
+                                serviceNumber: "",
                                 primaryCauseOfAction: payload.primaryCauseOfAction || "",
                                 remedySought: payload.remedySought || "",
                                 client: {
@@ -467,7 +468,7 @@
             }
             const caseInfo = plan.caseInfo || {};
             const client = caseInfo.client || {};
-            const filename = "caseplan_" + (caseInfo.caseNumber || plan.id || "unknown") + "_" + (client.lastName || "client") + ".doc";
+            const filename = "caseplan_" + (caseInfo.serviceNumber || caseInfo.caseNumber || plan.id || "unknown") + "_" + (client.lastName || "client") + ".doc";
             const wordHtml = buildWordDocumentHtml(content);
             const blob = new Blob([wordHtml], { type: "application/msword;charset=utf-8" });
             const url = URL.createObjectURL(blob);
@@ -496,7 +497,7 @@
                             <Field label="Attorney Name *" value={form.attorneyName} onChange={v => updateField("attorneyName", v)} />
                             <Field label="Bar Number * (e.g. BAR-12345678-1234)" value={form.barNumber} onChange={v => updateField("barNumber", v)} />
                             <Field label="Referring Source" value={form.referringSource} onChange={v => updateField("referringSource", v)} />
-                            <Field label="Case Number (Optional)" value={form.caseNumber} onChange={v => updateField("caseNumber", v)} />
+                            <Field label="Docket Number (Optional, e.g. 2026-CV-123456)" value={form.docketNumber} onChange={v => updateField("docketNumber", v)} />
                             <Field label="Primary Cause of Action *" value={form.primaryCauseOfAction} onChange={v => updateField("primaryCauseOfAction", v)} />
                             <Field label="Opposing Party" value={form.opposingParty} onChange={v => updateField("opposingParty", v)} extraClass="full" />
                             <Field label="Remedy Sought *" value={form.remedySought} onChange={v => updateField("remedySought", v)} extraClass="full" />
@@ -543,6 +544,8 @@
                                     const caseInfo = plan.caseInfo || {};
                                     const client = caseInfo.client || {};
                                     const attorney = caseInfo.attorney || {};
+                                    const serviceNumber = caseInfo.serviceNumber || "-";
+                                    const docketNumber = caseInfo.docketNumber || caseInfo.caseNumber || "-";
                                     const isCompleted = plan.status === "completed";
                                     const isFailed = plan.status === "failed";
                                     return (
@@ -550,7 +553,8 @@
                                             <td>{plan.id}</td>
                                             <td>
                                                 <div>{client.firstName || ""} {client.lastName || ""}</div>
-                                                <div className="hint">Case #{caseInfo.caseNumber || "-"}</div>
+                                                <div className="hint">Service #{serviceNumber}</div>
+                                                <div className="hint">Docket #{docketNumber}</div>
                                             </td>
                                             <td>{caseInfo.primaryCauseOfAction || "-"}</td>
                                             <td>

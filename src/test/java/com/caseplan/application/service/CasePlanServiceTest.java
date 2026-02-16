@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Collections;
 import java.util.Arrays;
+import java.time.Instant;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +52,7 @@ public class CasePlanServiceTest {
         request.setClientLastName("Doe");
         request.setAttorneyName("Jane Smith");
         request.setBarNumber("BAR123");
-        request.setCaseNumber("123456");
+        request.setDocketNumber("2026-CV-123456");
         request.setPrimaryCauseOfAction("Contract Breach");
         request.setRemedySought("Damages");
 
@@ -88,6 +89,9 @@ public class CasePlanServiceTest {
                 return casePlan;
             }
         });
+        when(casePlanRepo.findAllByOrderByCreatedAtDesc()).thenReturn(Collections.emptyList());
+        when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc(anyString()))
+                .thenReturn(Optional.empty());
     }
 
     // ==================== createCasePlan ====================
@@ -179,7 +183,8 @@ public class CasePlanServiceTest {
         verify(caseInfoRepo).save(captor.capture());
         CaseInfo saved = captor.getValue();
 
-        assertEquals("123456", saved.getCaseNumber());
+        assertEquals("2026-CV-123456", saved.getCaseNumber());
+        assertEquals("SRV-", saved.getServiceNumber().substring(0, 4));
         assertEquals("Contract Breach", saved.getPrimaryCauseOfAction());
         assertEquals("Damages", saved.getRemedySought());
         assertEquals("Fraud", saved.getAdditionalCauses());
@@ -416,8 +421,8 @@ public class CasePlanServiceTest {
     }
 
     @Test
-    public void create_caseNumberBlank_storedAsNull() {
-        request.setCaseNumber("   ");
+    public void create_docketNumberBlank_storedAsNull() {
+        request.setDocketNumber("   ");
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(attorneyRepo.findByBarNumber("BAR123")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
@@ -428,6 +433,24 @@ public class CasePlanServiceTest {
         ArgumentCaptor<CaseInfo> captor = ArgumentCaptor.forClass(CaseInfo.class);
         verify(caseInfoRepo, atLeastOnce()).save(captor.capture());
         assertNull(captor.getValue().getCaseNumber());
+    }
+
+    @Test
+    public void create_existingServiceNumber_allocatesNextSequence() {
+        CaseInfo latest = new CaseInfo();
+        latest.setServiceNumber("SRV-20260216-0011");
+        when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc(anyString()))
+                .thenReturn(Optional.of(latest));
+        when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
+        when(attorneyRepo.findByBarNumber("BAR123")).thenReturn(Optional.empty());
+        when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
+                anyLong(), anyString(), anyString(), any(), any())).thenReturn(
+                Collections.emptyList(), Collections.emptyList());
+
+        service.create(request);
+        ArgumentCaptor<CaseInfo> captor = ArgumentCaptor.forClass(CaseInfo.class);
+        verify(caseInfoRepo, atLeastOnce()).save(captor.capture());
+        assertEquals("0012", captor.getValue().getServiceNumber().substring(captor.getValue().getServiceNumber().length() - 4));
     }
 
     @Test
@@ -453,6 +476,27 @@ public class CasePlanServiceTest {
         service.getById(1L);
         verify(casePlanRepo).findAllByOrderByCreatedAtDesc();
         verify(casePlanRepo).findById(1L);
+    }
+
+    @Test
+    public void listAll_backfillsMissingServiceNumber() {
+        CaseInfo info = new CaseInfo();
+        info.setCreatedAt(Instant.parse("2026-02-16T15:02:03Z"));
+        CasePlan plan = new CasePlan();
+        plan.setId(77L);
+        plan.setCaseInfo(info);
+
+        CaseInfo latest = new CaseInfo();
+        latest.setServiceNumber("SRV-20260216-0004");
+        when(casePlanRepo.findAllByOrderByCreatedAtDesc()).thenReturn(Collections.singletonList(plan));
+        when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc("SRV-20260216-"))
+                .thenReturn(Optional.of(latest));
+
+        service.listAll();
+
+        ArgumentCaptor<CaseInfo> captor = ArgumentCaptor.forClass(CaseInfo.class);
+        verify(caseInfoRepo).save(captor.capture());
+        assertEquals("SRV-20260216-0005", captor.getValue().getServiceNumber());
     }
 
     @Test

@@ -72,7 +72,8 @@ public class CasePlanGenerationService {
         String additionalCauses = optional(caseInfo.getAdditionalCauses(), "None");
         String priorLegalActions = optional(caseInfo.getPriorLegalActions(), "None");
         String caseDocuments = optional(caseInfo.getCaseDocuments(), "None provided");
-        String caseNumber = optional(caseInfo.getCaseNumber(), "Not assigned yet");
+        String serviceNumber = optional(caseInfo.getServiceNumber(), "Not assigned yet");
+        String docketNumber = optional(caseInfo.getCaseNumber(), "Not provided");
 
         String promptStr =
                 "You are a legal assistant. Generate a Legal Service Plan based on the following case information.\n\n"
@@ -85,7 +86,8 @@ public class CasePlanGenerationService {
                         + "--- Case Information ---\n"
                         + "Client Name: " + client.getFirstName() + " " + client.getLastName() + "\n"
                         + "Referring Attorney: " + attorney.getName() + " (Bar #: " + attorney.getBarNumber() + ")\n"
-                        + "Case Number: " + caseNumber + "\n"
+                        + "Service Number: " + serviceNumber + "\n"
+                        + "Docket Number: " + docketNumber + "\n"
                         + "Primary Cause of Action: " + caseInfo.getPrimaryCauseOfAction() + "\n"
                         + "Remedy Sought: " + caseInfo.getRemedySought() + "\n"
                         + "Additional Causes: " + additionalCauses + "\n"

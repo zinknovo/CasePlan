@@ -1,5 +1,6 @@
 package com.caseplan.adapter.in.web.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -26,8 +27,9 @@ public class CreateCasePlanRequest {
 
     private String referringSource;
 
-    // Optional at intake stage; many new cases do not have an assigned case number yet.
-    private String caseNumber;
+    // Optional official/court docket number.
+    @JsonAlias("caseNumber")
+    private String docketNumber;
 
     @NotBlank(message = "Primary cause of action is required")
     private String primaryCauseOfAction;

@@ -77,7 +77,8 @@ public class GetOrdersHandler implements RequestHandler<APIGatewayProxyRequestEv
         CaseInfo info = plan.getCaseInfo();
         if (info != null) {
             Map<String, Object> caseInfo = new LinkedHashMap<>();
-            caseInfo.put("caseNumber", info.getCaseNumber());
+            caseInfo.put("serviceNumber", info.getServiceNumber());
+            caseInfo.put("docketNumber", info.getCaseNumber());
             caseInfo.put("primaryCauseOfAction", info.getPrimaryCauseOfAction());
             caseInfo.put("remedySought", info.getRemedySought());
 
