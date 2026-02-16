@@ -1,89 +1,108 @@
-# AGENTS.md (CasePlan)
+# AGENTS.md
 
-This file defines repository-level operating rules for AI coding agents.
-本文件定义仓库级 AI 编码代理执行规则。
+This file defines persistent, project-level operating rules for AI coding agents in this repository.
+本文件用于定义本仓库 AI 编码代理的长期执行规则。
 
-## 1. Scope & Priority / 作用范围与优先级
+## 0) Scope / 作用范围
 
-- Apply to all work in this repository.
-- 适用于本仓库内所有改动与操作。
-- Priority:
-- 优先级：
-1. System/developer instructions from runtime.
-2. User request in current conversation.
-3. This `AGENTS.md`.
+- Applies to this repository only.
+- 仅对本仓库生效。
+- Do not assume these rules apply to other repositories unless copied there.
+- 不要假设这些规则自动适用于其他仓库，除非你把它复制过去。
 
-## 2. Core Principle / 核心原则
+## 1) Non-Negotiable Deployment Rules / 不可协商的发布规则
 
-- Do not rely on memory from chat.
-- 不依赖“对话记忆”。
-- Convert repeated expectations into scripts, CI checks, and docs.
-- 将重复要求固化为脚本、CI 检查、文档。
+### 1.1 Lambda code update must use S3 handoff
 
-## 3. Deployment Guardrails / 部署防呆规则
+- For Java Lambda artifacts in this project, do **NOT** use direct `--zip-file` upload by default.
+- 本项目 Java Lambda 包默认**禁止**先尝试 `--zip-file` 直传。
+- Always use: upload package to S3, then `aws lambda update-function-code --s3-bucket --s3-key`.
+- 一律采用：先上传 S3，再通过 `--s3-bucket/--s3-key` 更新函数。
+- Reason: package size frequently exceeds direct upload limits.
+- 原因：包体经常超出直传限制。
 
-- Java Lambda package updates must use S3 handoff (`--s3-bucket` + `--s3-key`).
-- Java Lambda 更新必须走 S3 中转，不先走本地 zip 直传。
-- After deployment, verify live API contract before claiming success.
-- 部署后先做线上契约校验，再宣告成功。
+### 1.2 Frontend change is not complete without live deploy verification
 
-Required live checks:
-必做线上校验：
-1. `GET /orders` returns expected fields for current UI contract.
-2. API Gateway routes target the expected Lambda functions.
-3. Lambda `LastModified` is newer than pre-deploy baseline.
+- Any frontend behavior change must include:
+- 前端行为变更必须包含：
+1. local test pass,
+2. deployment confirmation,
+3. live URL verification.
 
-## 4. Frontend-Backend Contract Rule / 前后端契约规则
+- Minimum live verification includes:
+- 最低线上验证包括：
+1. page contains expected label/text,
+2. API responses match expected contract,
+3. no stale cache issue after publish.
 
-- Any DTO/response field change must update all three together:
-- 任何字段变更必须同时更新三处：
-1. Backend handler/service DTO mapping.
-2. Frontend payload rendering/consumption.
-3. Tests (unit/e2e) and smoke checks.
+### 1.3 CI/CD must not rely only on unit/E2E mocks
 
-- If contract changed but deployed API is old, explicitly state deployment mismatch.
-- 若代码已改但线上接口仍旧，必须明确指出“部署不一致”。
+- Mock-based tests are necessary but insufficient.
+- 基于 mock 的测试是必要的，但不充分。
+- Always add/maintain post-deploy smoke checks against real staging/prod endpoints.
+- 必须维护面向真实环境 endpoint 的发布后 smoke check。
 
-## 5. Frontend Publish Rule / 前端发布规则
+## 2) API Contract Guardrails / 接口契约护栏
 
-- For `src/main/resources/static/index.html` changes:
-- 当 `src/main/resources/static/index.html` 变更时：
-1. Publish to frontend S3 bucket.
-2. Trigger CloudFront invalidation when permission exists.
-3. If invalidation permission is missing, do not hide it; report clearly.
+When frontend fields or table rendering depend on backend JSON:
+当前端字段或表格依赖后端 JSON 时：
 
-## 6. Data Hygiene Rule / 数据清理规则
+- Verify **actual API Gateway route -> integration -> Lambda** mapping before declaring done.
+- 在宣告完成前，检查真实的 API Gateway 路由到 Lambda 的映射。
+- Verify live payload keys explicitly.
+- 明确验证线上返回键名。
+- Do not assume local code changes are already running in cloud.
+- 不要假设本地代码改动已经在云端生效。
 
-- E2E/test records must not remain in production-facing list unless user asks.
-- 未经用户明确保留，E2E/测试数据不能留在生产展示列表。
-- For one-off cleanup tooling, remove temporary code after execution.
-- 一次性清理工具执行完后，删除临时代码与临时函数。
+Current known business convention:
+当前已确认的业务约定：
 
-## 7. Verification Before Reply / 回复前验证
+- Internal technical id (`caseplan id`) exists for backend operations.
+- 后端保留技术主键（`caseplan id`）。
+- Business-facing identifier is `serviceNumber` (`SRV-YYYYMMDD-XXXX`).
+- 业务展示编号为 `serviceNumber`（`SRV-YYYYMMDD-XXXX`）。
+- Frontend result row currently displays only `#serviceNumber` text, not "Service" or "Docket" label.
+- 前端结果行当前仅显示 `#serviceNumber`，不显示 "Service" 或 "Docket" 文案。
 
-- Before final reply on delivery tasks, include:
-- 对“已完成/已发布”类回复，必须先核验：
-1. `git` state (clean or clearly explained).
-2. Test results actually run.
-3. Live endpoint result (if deployment/integration involved).
+## 3) Data Hygiene Rules / 数据卫生规则
 
-## 8. Documentation Update Rule / 文档更新规则
+- Do not leave E2E/probe seed data in production-like environments.
+- 不要在类生产环境保留 E2E/探针测试数据。
+- If user requests to preserve manual entries, explicitly preserve only those and remove the rest.
+- 如果用户要求保留手工录入数据，必须仅保留指定记录并清理其余记录。
+- After cleanup, verify resulting list and share concrete IDs/names.
+- 清理后要复核列表，并给出明确 ID/姓名结果。
 
-- If workflow/behavior changed, update docs in same PR/commit.
-- 工作流或行为变更时，同次提交更新文档。
-- Minimum docs to consider:
-- 至少检查这些文档：
-1. `README.md`
-2. `README.zh-CN.md`
-3. Relevant docs under `docs/`
+## 4) Required Delivery Checklist / 交付前必检清单
 
-## 9. Communication Rule / 沟通规则
+Before saying "done", execute and report:
+在说“完成”前，必须执行并报告：
 
-- State uncertainties as facts with evidence.
-- 对不确定项给出证据和边界，不做猜测式承诺。
-- Distinguish clearly:
-- 明确区分：
-1. Code changed locally.
-2. Pushed to remote.
-3. Actually live in AWS.
+1. Code-level tests run status (what passed/failed).
+2. Deployment status (what was deployed, where).
+3. Live endpoint verification (sample response keys).
+4. Frontend live URL check (expected UI text present).
+5. Data state check if relevant (counts, preserved records).
 
+## 5) Documentation Update Rule / 文档同步规则
+
+- If workflow/process behavior changes, update docs in same change set.
+- 若流程行为发生变化，必须在同一变更中同步更新文档。
+- At minimum update README + README.zh-CN when CI/CD, deploy, or env assumptions change.
+- 至少同步更新 README 与 README.zh-CN（CI/CD、部署、环境假设变更时）。
+
+## 6) Tooling Compatibility Note / 兼容性说明
+
+- `AGENTS.md` is a convention supported by some coding agents (including this Codex workflow here).
+- `AGENTS.md` 是部分编码代理支持的约定（包括当前这套 Codex 工作流）。
+- It is **NOT** a universal standard for all CLI agents.
+- 它**不是**所有 CLI agent 的通用标准。
+- Other tools may use different files (for example: their own config/instruction files) or ignore this file entirely.
+- 其他工具可能使用不同指令文件，或完全忽略本文件。
+
+## 7) If in Doubt / 不确定时
+
+- Prefer explicit verification over assumption.
+- 以显式验证替代主观假设。
+- Surface uncertainty early and run a concrete check.
+- 尽早暴露不确定点并执行具体检查。
