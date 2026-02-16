@@ -100,6 +100,11 @@ scripts/smoke_apigw_lambda.sh         # API Gateway -> Lambda 冒烟测试
 - SQS 事件源 -> `GenerateCasePlanWorkerHandler`
 - 队列提供者：SQS（`QUEUE_PROVIDER=sqs`）
 
+### 当前线上地址
+
+- 前端：`https://dyopmtsq4vhrb.cloudfront.net`
+- API 基础地址：`https://mc94chabh2.execute-api.us-east-2.amazonaws.com`
+
 ## 本地启动
 
 ### 方式 A：Docker Compose 启动依赖，Maven 运行应用

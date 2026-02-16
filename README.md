@@ -100,6 +100,11 @@ scripts/smoke_apigw_lambda.sh         # API Gateway -> Lambda smoke test
 - SQS event source -> `GenerateCasePlanWorkerHandler`
 - Queue provider: SQS (`QUEUE_PROVIDER=sqs`)
 
+### Deployed URLs (Current)
+
+- Frontend: `https://dyopmtsq4vhrb.cloudfront.net`
+- API base: `https://mc94chabh2.execute-api.us-east-2.amazonaws.com`
+
 ## Quick Start (Local)
 
 ### Option A: Start dependencies with Docker Compose, run app with Maven
