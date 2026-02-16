@@ -243,6 +243,7 @@ Details: `infra/terraform-replica/README.md`
 - `apply` job runs only on push to main or manual dispatch with `apply=true`
 - Terraform state stored in S3 + DynamoDB lock
 - After `apply`, frontend `src/main/resources/static/index.html` is auto-published to S3 and CloudFront is invalidated
+- If OIDC role lacks `cloudfront:CreateInvalidation`, deploy still completes and only cache invalidation is skipped
 - Optional repo vars for frontend deploy target:
   - `FRONTEND_S3_BUCKET` (default: `caseplan-frontend-727766004034-use2`)
   - `FRONTEND_DISTRIBUTION_ID` (default: `E23XI74DK4D2MF`)

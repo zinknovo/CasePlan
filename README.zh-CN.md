@@ -243,6 +243,7 @@ terraform destroy
 - `apply` 任务仅在 push main 或手动触发且 `apply=true` 时执行
 - Terraform state 存储在 S3 + DynamoDB 锁
 - `apply` 后会自动发布前端 `src/main/resources/static/index.html` 到 S3，并触发 CloudFront 失效
+- 若 OIDC 角色暂未授予 `cloudfront:CreateInvalidation`，部署会继续成功，仅跳过失效步骤
 - 前端发布目标支持仓库变量（可选）：
   - `FRONTEND_S3_BUCKET`（默认：`caseplan-frontend-727766004034-use2`）
   - `FRONTEND_DISTRIBUTION_ID`（默认：`E23XI74DK4D2MF`）
