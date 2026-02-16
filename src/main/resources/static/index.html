@@ -306,7 +306,7 @@
         const [form, setForm] = useState(EMPTY_FORM);
         const [plans, setPlans] = useState([]);
         const [loading, setLoading] = useState(true);
-        const [submitting, setSubmitting] = useState(false);
+        const [pendingCreates, setPendingCreates] = useState(0);
         const [error, setError] = useState("");
         const [info, setInfo] = useState("");
         const [modalPlan, setModalPlan] = useState(null);
@@ -354,32 +354,60 @@
 
         async function handleSubmit(e) {
             e.preventDefault();
-            setSubmitting(true);
             setError("");
-            setInfo("");
-            try {
-                const res = await fetch(ORDERS_BASE, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(form)
-                });
-                let payload = null;
+            const payload = { ...form };
+            setForm(EMPTY_FORM);
+            setPendingCreates(prev => prev + 1);
+            setInfo("Submitting in background. You can enter the next case now.");
+
+            (async () => {
                 try {
-                    payload = await res.json();
-                } catch (ignore) {
+                    const res = await fetch(ORDERS_BASE, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    });
+                    let body = null;
+                    try {
+                        body = await res.json();
+                    } catch (ignore) {
+                    }
+                    if (!res.ok) {
+                        const msg = body && body.message ? body.message : ("Create failed (" + res.status + ")");
+                        throw new Error(msg);
+                    }
+                    const createdId = body && body.id ? body.id : null;
+                    if (createdId) {
+                        const queuedItem = {
+                            id: createdId,
+                            status: (body && body.status) || "pending",
+                            createdAt: new Date().toISOString(),
+                            caseInfo: {
+                                caseNumber: payload.caseNumber || "",
+                                primaryCauseOfAction: payload.primaryCauseOfAction || "",
+                                remedySought: payload.remedySought || "",
+                                client: {
+                                    firstName: payload.clientFirstName || "",
+                                    lastName: payload.clientLastName || ""
+                                },
+                                attorney: {
+                                    name: payload.attorneyName || "",
+                                    barNumber: payload.barNumber || ""
+                                }
+                            }
+                        };
+                        setPlans(prev => [queuedItem, ...prev.filter(p => p.id !== createdId)]);
+                    }
+                    setInfo(createdId
+                        ? ("Submitted successfully. Order #" + createdId + " queued.")
+                        : "Submitted successfully.");
+                    await fetchPlans(true);
+                } catch (err) {
+                    setError(err.message || "Submit failed");
+                } finally {
+                    setPendingCreates(prev => Math.max(0, prev - 1));
                 }
-                if (!res.ok) {
-                    const msg = payload && payload.message ? payload.message : ("Create failed (" + res.status + ")");
-                    throw new Error(msg);
-                }
-                setForm(EMPTY_FORM);
-                setInfo("Entry submitted. Status list will refresh automatically.");
-                await fetchPlans(true);
-            } catch (e) {
-                setError(e.message || "Submit failed");
-            } finally {
-                setSubmitting(false);
-            }
+            })();
         }
 
         async function handleView(id) {
@@ -444,8 +472,8 @@
                             <TextAreaField label="Case Documents / Notes" value={form.caseDocuments} onChange={v => updateField("caseDocuments", v)} extraClass="full" />
                         </div>
                         <div className="toolbar">
-                            <button className="btn" type="submit" disabled={submitting}>
-                                {submitting ? "Submitting..." : "Submit Case"}
+                            <button className="btn" type="submit">
+                                {pendingCreates > 0 ? ("Submit Case (" + pendingCreates + " in flight)") : "Submit Case"}
                             </button>
                         </div>
                     </form>

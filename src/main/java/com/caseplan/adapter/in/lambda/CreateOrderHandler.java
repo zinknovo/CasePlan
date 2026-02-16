@@ -67,7 +67,11 @@ public class CreateOrderHandler implements RequestHandler<APIGatewayProxyRequest
             }
 
             statusCode = 201;
-            return LambdaJsonResponse.json(MAPPER, statusCode, LambdaJsonResponse.mapOf("id", planId, "message", "created"));
+            return LambdaJsonResponse.json(MAPPER, statusCode, LambdaJsonResponse.mapOf(
+                    "id", planId,
+                    "status", "pending",
+                    "message", "queued"
+            ));
         } catch (BaseAppException e) {
             statusCode = e.getHttpStatus().value();
             return LambdaJsonResponse.json(MAPPER, statusCode, LambdaJsonResponse.mapOf(
