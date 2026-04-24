@@ -149,7 +149,9 @@ docker compose up --build
 
 - `LLM_PROVIDER`：`openai` 或 `claude`
 - `LLM_OPENAI_API_KEY` / `DEEPSEEK_API_KEY`
-- `LLM_OPENAI_BASE_URL`（默认兼容 DeepSeek）
+- `LLM_OPENAI_BASE_URL`（默认 `https://api.deepseek.com`）
+- `LLM_OPENAI_MODEL`（默认 `deepseek-v4-flash`；需要更强推理可设为 `deepseek-v4-pro`）
+- `LLM_OPENAI_THINKING_TYPE`（可选：`enabled` 或 `disabled`；空值会让 DeepSeek V4 保持旧版非 thinking 行为）
 - `ANTHROPIC_API_KEY`
 
 ## API 概览

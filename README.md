@@ -149,7 +149,9 @@ Local default URL: `jdbc:postgresql://localhost:5433/dev_db`
 
 - `LLM_PROVIDER`: `openai` or `claude`
 - `LLM_OPENAI_API_KEY` / `DEEPSEEK_API_KEY`
-- `LLM_OPENAI_BASE_URL` (DeepSeek-compatible by default)
+- `LLM_OPENAI_BASE_URL` (defaults to `https://api.deepseek.com`)
+- `LLM_OPENAI_MODEL` (defaults to `deepseek-v4-flash`; use `deepseek-v4-pro` for stronger reasoning)
+- `LLM_OPENAI_THINKING_TYPE` (optional: `enabled` or `disabled`; empty preserves legacy non-thinking behavior for DeepSeek V4)
 - `ANTHROPIC_API_KEY`
 
 ## API Summary

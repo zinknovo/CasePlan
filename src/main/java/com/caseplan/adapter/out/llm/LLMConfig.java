@@ -26,9 +26,11 @@ public class LLMConfig {
     public LLMService llmService(
             RestTemplate llmRestTemplate,
             @Value("${llm.provider:openai}") String provider,
-            @Value("${llm.openai.base-url:https://api.deepseek.com/v1}") String openaiBaseUrl,
+            @Value("${llm.openai.base-url:https://api.deepseek.com}") String openaiBaseUrl,
             @Value("${llm.openai.api-key:}") String openaiApiKey,
-            @Value("${llm.openai.model:}") String openaiModel,
+            @Value("${llm.openai.model:deepseek-v4-flash}") String openaiModel,
+            @Value("${llm.openai.thinking-type:}") String openaiThinkingType,
+            @Value("${llm.openai.reasoning-effort:}") String openaiReasoningEffort,
             @Value("${llm.openai.model-refresh-seconds:2592000}") long openaiModelRefreshSeconds,
             @Value("${llm.openai.max-tokens:4000}") int openaiMaxTokens,
             @Value("${llm.claude.api-key:}") String claudeApiKey,
@@ -52,6 +54,8 @@ public class LLMConfig {
                         openaiBaseUrl,
                         openaiApiKey,
                         openaiModel,
+                        openaiThinkingType,
+                        openaiReasoningEffort,
                         openaiModelRefreshSeconds,
                         openaiMaxTokens
                 );

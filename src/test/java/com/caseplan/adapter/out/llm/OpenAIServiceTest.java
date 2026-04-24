@@ -26,7 +26,7 @@ public class OpenAIServiceTest {
 
     @Before
     public void setup() {
-        service = new OpenAIService(restTemplate, "https://api.example.com/v1", "test-key", "gpt-4", 86400, 4096);
+        service = new OpenAIService(restTemplate, "https://api.example.com/v1", "test-key", "gpt-4", "", "", 86400, 4096);
     }
 
     @SuppressWarnings("unchecked")
@@ -166,11 +166,45 @@ public class OpenAIServiceTest {
 
     @Test
     public void chat_baseUrlWithTrailingSlash_noDoubleSlash() {
-        OpenAIService serviceWithSlash = new OpenAIService(restTemplate, "https://api.example.com/v1/", "key", "gpt-4", 86400, 4096);
+        OpenAIService serviceWithSlash = new OpenAIService(restTemplate, "https://api.example.com/v1/", "key", "gpt-4", "", "", 86400, 4096);
         mockChatResponse("response");
 
         serviceWithSlash.chat("Hi");
 
         verify(restTemplate).exchange(eq("https://api.example.com/v1/chat/completions"), any(), any(), any(ParameterizedTypeReference.class));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void chat_deepSeekV4_sendsThinkingDisabledByDefault() {
+        service = new OpenAIService(restTemplate, "https://api.deepseek.com", "test-key", "deepseek-v4-flash", "", "", 86400, 4096);
+        when(restTemplate.exchange(
+                eq("https://api.deepseek.com/chat/completions"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenReturn(new ResponseEntity<>(chatResponse("response"), HttpStatus.OK));
+
+        service.chat("Hi");
+
+        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
+
+        Map<String, Object> body = (Map<String, Object>) captor.getValue().getBody();
+        Map<String, Object> thinking = (Map<String, Object>) body.get("thinking");
+        assertEquals("disabled", thinking.get("type"));
+    }
+
+    private Map<String, Object> chatResponse(String content) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("role", "assistant");
+        message.put("content", content);
+
+        Map<String, Object> choice = new HashMap<>();
+        choice.put("message", message);
+
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("choices", Collections.singletonList(choice));
+        return responseBody;
     }
 }
