@@ -21,6 +21,8 @@ public class OpenAIService extends BaseLLMService {
     private final String baseUrl;
     private final String apiKey;
     private final String configuredModel;
+    private final String configuredThinkingType;
+    private final String configuredReasoningEffort;
     private final long modelRefreshSeconds;
     private final int maxTokens;
     private final ModelCache modelCache = new ModelCache();
@@ -30,12 +32,16 @@ public class OpenAIService extends BaseLLMService {
             String baseUrl,
             String apiKey,
             String configuredModel,
+            String configuredThinkingType,
+            String configuredReasoningEffort,
             long modelRefreshSeconds,
             int maxTokens) {
         this.restTemplate = restTemplate;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
         this.apiKey = apiKey;
         this.configuredModel = configuredModel;
+        this.configuredThinkingType = configuredThinkingType;
+        this.configuredReasoningEffort = configuredReasoningEffort;
         this.modelRefreshSeconds = modelRefreshSeconds;
         this.maxTokens = maxTokens;
     }
@@ -71,6 +77,7 @@ public class OpenAIService extends BaseLLMService {
         body.put("model", model);
         body.put("max_tokens", maxTokens);
         body.put("messages", apiMessages);
+        addDeepSeekThinkingOptions(body, model);
 
         String url = baseUrl + "chat/completions";
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
@@ -93,5 +100,34 @@ public class OpenAIService extends BaseLLMService {
         }
         Object content = message.get("content");
         return content != null ? content.toString() : "";
+    }
+
+    private void addDeepSeekThinkingOptions(Map<String, Object> body, String model) {
+        if (!isDeepSeekBaseUrl() || model == null || !model.startsWith("deepseek-v4")) {
+            return;
+        }
+
+        String thinkingType = trimToNull(configuredThinkingType);
+        if (thinkingType == null) {
+            thinkingType = "disabled";
+        }
+        body.put("thinking", Map.of("type", thinkingType));
+
+        String reasoningEffort = trimToNull(configuredReasoningEffort);
+        if (reasoningEffort != null) {
+            body.put("reasoning_effort", reasoningEffort);
+        }
+    }
+
+    private boolean isDeepSeekBaseUrl() {
+        return baseUrl.contains("api.deepseek.com");
+    }
+
+    private String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }
