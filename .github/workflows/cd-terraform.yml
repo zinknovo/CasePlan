@@ -363,7 +363,16 @@ jobs:
             -backend-config="key=${key}" \
             -backend-config="region=${TF_STATE_REGION}" \
             -backend-config="dynamodb_table=${TF_LOCK_TABLE}"
-          terraform destroy -input=false -auto-approve
+          # Lambda VPC ENIs release asynchronously after function deletion and
+          # can briefly block SG deletion. Retry until they are gone.
+          for attempt in 1 2 3 4 5; do
+            if terraform destroy -input=false -auto-approve; then
+              exit 0
+            fi
+            echo "destroy attempt ${attempt} failed; retrying in 60s..."
+            sleep 60
+          done
+          exit 1
         env:
           TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
 
