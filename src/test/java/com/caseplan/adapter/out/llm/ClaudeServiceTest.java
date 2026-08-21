@@ -18,7 +18,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-@SuppressWarnings({"unchecked", "rawtypes"})
 public class ClaudeServiceTest {
 
     @Mock private RestTemplate restTemplate;
@@ -58,6 +57,7 @@ public class ClaudeServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void chat_withSystemMessage_systemSentSeparately() {
         mockChatResponse("response");
 
@@ -67,20 +67,18 @@ public class ClaudeServiceTest {
         );
         service.chat(messages);
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
 
-        @SuppressWarnings("unchecked")
         Map<String, Object> body = (Map<String, Object>) captor.getValue().getBody();
         // System message should be in body.system, not in messages array
+        assertNotNull(body);
         assertEquals("You are helpful", body.get("system"));
 
-        @SuppressWarnings("unchecked")
         List<Map<String, String>> apiMessages = (List<Map<String, String>>) body.get("messages");
         // messages array should only contain user message, not system
         assertEquals(1, apiMessages.size());
-        assertEquals("user", apiMessages.get(0).get("role"));
+        assertEquals("user", apiMessages.getFirst().get("role"));
     }
 
     @SuppressWarnings("unchecked")
@@ -90,7 +88,7 @@ public class ClaudeServiceTest {
 
         service.chat("Hi");
 
-        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
 
         HttpHeaders headers = captor.getValue().getHeaders();

@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CaseInfoRepo extends JpaRepository<CaseInfo, Long> {
-    Optional<CaseInfo> findByCaseNumber(String caseNumber);
     Optional<CaseInfo> findTopByServiceNumberStartingWithOrderByServiceNumberDesc(String prefix);
     List<CaseInfo> findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
             Long clientId, String primaryCauseOfAction, String opposingParty, Instant start, Instant end);

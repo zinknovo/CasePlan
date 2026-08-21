@@ -39,10 +39,7 @@ public class CasePlanController {
     @GetMapping("/{id}")
     public ResponseEntity<CasePlan> getById(@PathVariable @NonNull Long id) {
         Optional<CasePlan> optional = casePlanService.getById(id);
-        if (optional.isPresent()) {
-            return ResponseEntity.ok(optional.get());
-        }
-        return ResponseEntity.notFound().build();
+        return optional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/{id}/status")

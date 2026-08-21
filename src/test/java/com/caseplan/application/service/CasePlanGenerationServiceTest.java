@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
@@ -21,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
@@ -64,27 +64,47 @@ public class CasePlanGenerationServiceTest {
         assertTrue(ok);
         ArgumentCaptor<CasePlan> captor = ArgumentCaptor.forClass(CasePlan.class);
         verify(casePlanRepo, atLeast(2)).save(captor.capture());
-        CasePlan last = captor.getAllValues().get(captor.getAllValues().size() - 1);
+        CasePlan last = captor.getAllValues().getLast();
         assertEquals("completed", last.getStatus());
         assertEquals("generated", last.getGeneratedPlan());
         assertNull(last.getErrorMessage());
     }
 
     @Test
-    public void processWithRetry_allAttemptsFail_returnsFalseAndFailed() {
+    public void processWithRetry_allAttemptsFail_marksFailedAndPropagatesFailure() {
         CasePlan plan = buildCasePlan(2L, "pending");
         when(casePlanRepo.findById(2L)).thenReturn(Optional.of(plan));
         when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(identityCasePlanAnswer());
         when(llmService.chat(anyString())).thenThrow(new RuntimeException("LLM down"));
 
-        boolean ok = service.processWithRetry(2L);
-
-        assertFalse(ok);
+        try {
+            service.processWithRetry(2L);
+            fail("Expected generation failure to propagate to the queue consumer");
+        } catch (IllegalStateException ex) {
+            assertEquals("Case plan generation failed for id=2", ex.getMessage());
+        }
         ArgumentCaptor<CasePlan> captor = ArgumentCaptor.forClass(CasePlan.class);
         verify(casePlanRepo, atLeast(2)).save(captor.capture());
-        CasePlan last = captor.getAllValues().get(captor.getAllValues().size() - 1);
+        CasePlan last = captor.getAllValues().getLast();
         assertEquals("failed", last.getStatus());
         assertEquals("LLM down", last.getErrorMessage());
+    }
+
+    @Test
+    public void processWithRetry_alreadyFailed_propagatesFailureForQueueRedelivery() {
+        CasePlan plan = buildCasePlan(8L, "failed");
+        plan.setErrorMessage("LLM down");
+        when(casePlanRepo.findById(8L)).thenReturn(Optional.of(plan));
+
+        try {
+            service.processWithRetry(8L);
+            fail("Expected failed queue message to remain retryable by the broker");
+        } catch (IllegalStateException ex) {
+            assertEquals("Case plan generation failed for id=8", ex.getMessage());
+        }
+
+        verify(casePlanRepo, never()).save(any(CasePlan.class));
+        verify(llmService, never()).chat(anyString());
     }
 
     @Test
@@ -99,7 +119,7 @@ public class CasePlanGenerationServiceTest {
         assertTrue(ok);
         ArgumentCaptor<CasePlan> captor = ArgumentCaptor.forClass(CasePlan.class);
         verify(casePlanRepo, atLeast(1)).save(captor.capture());
-        CasePlan last = captor.getAllValues().get(captor.getAllValues().size() - 1);
+        CasePlan last = captor.getAllValues().getLast();
         assertEquals("completed", last.getStatus());
     }
 
@@ -121,18 +141,6 @@ public class CasePlanGenerationServiceTest {
         when(casePlanRepo.findById(5L)).thenReturn(Optional.of(plan));
 
         boolean ok = service.processWithRetry(5L);
-
-        assertFalse(ok);
-        verify(llmService, never()).chat(anyString());
-        verify(casePlanRepo, never()).save(any(CasePlan.class));
-    }
-
-    @Test
-    public void processWithRetry_failedStatus_skips() {
-        CasePlan plan = buildCasePlan(6L, "failed");
-        when(casePlanRepo.findById(6L)).thenReturn(Optional.of(plan));
-
-        boolean ok = service.processWithRetry(6L);
 
         assertFalse(ok);
         verify(llmService, never()).chat(anyString());
@@ -182,11 +190,6 @@ public class CasePlanGenerationServiceTest {
     }
 
     private Answer<CasePlan> identityCasePlanAnswer() {
-        return new Answer<CasePlan>() {
-            @Override
-            public CasePlan answer(InvocationOnMock invocation) {
-                return invocation.getArgument(0);
-            }
-        };
+        return invocation -> invocation.getArgument(0);
     }
 }

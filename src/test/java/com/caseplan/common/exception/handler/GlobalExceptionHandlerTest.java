@@ -38,6 +38,7 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleBlockException(ex);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("block_error", response.getBody().get("type"));
         assertEquals("TEST_CODE", response.getBody().get("code"));
         assertEquals("Test block message", response.getBody().get("message"));
@@ -51,6 +52,7 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleBlockException(ex);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertFalse(response.getBody().containsKey("detail"));
     }
 
@@ -61,6 +63,7 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleValidationException(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("validation_error", response.getBody().get("type"));
         assertEquals("VAL_CODE", response.getBody().get("code"));
     }
@@ -74,6 +77,7 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleWarningException(ex);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("warning", response.getBody().get("type"));
         assertEquals("WARN_CODE", response.getBody().get("code"));
         assertEquals("Warning message", response.getBody().get("message"));
@@ -87,6 +91,7 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleWarningException(ex);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertFalse(response.getBody().containsKey("detail"));
     }
 
@@ -96,6 +101,7 @@ public class GlobalExceptionHandlerTest {
 
         ResponseEntity<Map<String, Object>> response = handler.handleBlockException(ex);
 
+        assertNotNull(response.getBody());
         assertEquals("BLOCK_ERROR", response.getBody().get("code"));
     }
 
@@ -105,6 +111,7 @@ public class GlobalExceptionHandlerTest {
 
         ResponseEntity<Map<String, Object>> response = handler.handleWarningException(ex);
 
+        assertNotNull(response.getBody());
         assertEquals("WARNING", response.getBody().get("code"));
     }
 
@@ -114,6 +121,7 @@ public class GlobalExceptionHandlerTest {
 
         ResponseEntity<Map<String, Object>> response = handler.handleValidationException(ex);
 
+        assertNotNull(response.getBody());
         assertEquals("VALIDATION_ERROR", response.getBody().get("code"));
     }
 
@@ -131,6 +139,7 @@ public class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleRequestValidationFailure(ex);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("validation_error", response.getBody().get("type"));
         assertEquals("VALIDATION_ERROR", response.getBody().get("code"));
         assertEquals("Validation failed", response.getBody().get("message"));

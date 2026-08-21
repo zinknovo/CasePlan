@@ -87,6 +87,7 @@ public class CasePlanControllerTest {
         ResponseEntity<Map<String, Object>> response = controller.getStatus(1L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
         assertEquals("completed", response.getBody().get("status"));
     }
 
@@ -154,6 +155,7 @@ public class CasePlanControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("attachment; filename=\"caseplan-5.txt\"", response.getHeaders().getFirst(HttpHeaders.CONTENT_DISPOSITION));
+        assertNotNull(response.getBody());
         assertEquals("hello", new String(response.getBody(), StandardCharsets.UTF_8));
     }
 
@@ -167,7 +169,6 @@ public class CasePlanControllerTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void retry_failed_returns202() {
         CasePlan failed = new CasePlan();
         failed.setId(9L);
@@ -177,7 +178,7 @@ public class CasePlanControllerTest {
         ResponseEntity<Map<String, Object>> response = controller.retry(9L);
 
         assertEquals(HttpStatus.ACCEPTED, response.getStatusCode());
-        assertTrue(response.getBody() instanceof Map);
+        assertNotNull(response.getBody());
         assertEquals(9L, response.getBody().get("id"));
     }
 

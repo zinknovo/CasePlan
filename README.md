@@ -16,7 +16,7 @@ The current project is **Lambda-first**, while preserving local development and 
 - Case creation with validation, duplicate checks, and warning flows
 - Asynchronous case-plan generation through queue decoupling
 - Order status query (`pending / processing / completed / failed`)
-- DLQ handling after max retries (`maxReceiveCount=3`)
+- Broker-level redelivery and DLQ routing after max receives (`maxReceiveCount=3`)
 - Web UI (`index.html`) and API integration support
 
 ## Functional Overview
@@ -52,7 +52,7 @@ The current project is **Lambda-first**, while preserving local development and 
 
 ## Tech Stack
 
-- Java 11
+- Java 21
 - Spring Boot 2.7
 - Spring Data JPA
 - PostgreSQL
@@ -100,10 +100,11 @@ scripts/smoke_apigw_lambda.sh         # API Gateway -> Lambda smoke test
 - SQS event source -> `GenerateCasePlanWorkerHandler`
 - Queue provider: SQS (`QUEUE_PROVIDER=sqs`)
 
-### Deployed URLs (Current)
+### AWS Deployment Lifecycle
 
-- Frontend: `https://dyopmtsq4vhrb.cloudfront.net`
-- API base: `https://mc94chabh2.execute-api.us-east-2.amazonaws.com`
+The AWS environment is an ephemeral validation target, not a permanently hosted production service.
+Terraform creates the Lambda/API Gateway/SQS replica for smoke testing and destroys it after validation
+to avoid idle cloud charges. No public endpoint is expected to remain live between deployment runs.
 
 ## Quick Start (Local)
 
@@ -198,6 +199,9 @@ JaCoCo thresholds in `pom.xml`:
 - Line coverage >= 90%
 - Branch coverage >= 90%
 
+The integration suite requires PostgreSQL and Redis. GitHub Actions starts both services automatically;
+for local verification, start them with `docker compose up -d db redis` before running `mvn verify`.
+
 ## Monitoring and Smoke Test
 
 - Monitoring plan: `monitoring.md`
@@ -218,6 +222,7 @@ API_BASE_URL="https://<api-id>.execute-api.<region>.amazonaws.com" \
 Folder: `infra/terraform-replica/`
 
 Used to provision a temporary replica of API/Lambda/SQS/IAM/SG for validation, then destroy it.
+It connects to an existing RDS PostgreSQL instance and does not provision RDS itself.
 
 ```bash
 cd infra/terraform-replica

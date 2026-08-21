@@ -38,27 +38,24 @@ public class LLMConfig {
             @Value("${llm.claude.model-refresh-seconds:2592000}") long claudeModelRefreshSeconds,
             @Value("${llm.claude.max-tokens:4000}") int claudeMaxTokens) {
 
-        switch (provider == null ? "" : provider.trim().toLowerCase()) {
-            case "claude":
-                return new ClaudeService(
-                        llmRestTemplate,
-                        claudeApiKey,
-                        claudeModel,
-                        claudeModelRefreshSeconds,
-                        claudeMaxTokens
-                );
-            case "openai":
-            default:
-                return new OpenAIService(
-                        llmRestTemplate,
-                        openaiBaseUrl,
-                        openaiApiKey,
-                        openaiModel,
-                        openaiThinkingType,
-                        openaiReasoningEffort,
-                        openaiModelRefreshSeconds,
-                        openaiMaxTokens
-                );
+        if ("claude".equals(provider == null ? "" : provider.trim().toLowerCase())) {
+            return new ClaudeService(
+                    llmRestTemplate,
+                    claudeApiKey,
+                    claudeModel,
+                    claudeModelRefreshSeconds,
+                    claudeMaxTokens
+            );
         }
+        return new OpenAIService(
+                llmRestTemplate,
+                openaiBaseUrl,
+                openaiApiKey,
+                openaiModel,
+                openaiThinkingType,
+                openaiReasoningEffort,
+                openaiModelRefreshSeconds,
+                openaiMaxTokens
+        );
     }
 }

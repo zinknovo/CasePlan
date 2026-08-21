@@ -30,8 +30,11 @@ public class CasePlanGenerationService {
 
         CasePlan casePlan = optional.get();
         String currentStatus = casePlan.getStatus();
-        if ("completed".equals(currentStatus) || "failed".equals(currentStatus)) {
+        if ("completed".equals(currentStatus)) {
             return false;
+        }
+        if ("failed".equals(currentStatus)) {
+            throw generationFailed(id);
         }
         if (!"pending".equals(currentStatus) && !"processing".equals(currentStatus)) {
             return false;
@@ -59,9 +62,10 @@ public class CasePlanGenerationService {
         }
 
         casePlan.setStatus("failed");
-        casePlan.setErrorMessage(last != null ? last.getMessage() : "unknown error");
+        // All MAX_ATTEMPTS attempts threw, so the last exception is always set here
+        casePlan.setErrorMessage(last.getMessage());
         casePlanRepo.save(casePlan);
-        return false;
+        throw generationFailed(id);
     }
 
     private String generatePlanWithLLM(CaseInfo caseInfo) {
@@ -113,5 +117,9 @@ public class CasePlanGenerationService {
             Thread.currentThread().interrupt();
             throw new RuntimeException("interrupted", e);
         }
+    }
+
+    private IllegalStateException generationFailed(Long id) {
+        return new IllegalStateException("Case plan generation failed for id=" + id);
     }
 }

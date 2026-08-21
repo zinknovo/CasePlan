@@ -8,9 +8,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import org.springframework.data.redis.core.ListOperations;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
@@ -65,12 +63,7 @@ public class CasePlanConsumerTest {
         CasePlan stale2 = plan(20L, "processing");
         when(casePlanRepo.findByStatusAndUpdatedAtBefore(eq("processing"), any(Instant.class)))
                 .thenReturn(Arrays.asList(stale1, stale2));
-        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(new Answer<CasePlan>() {
-            @Override
-            public CasePlan answer(InvocationOnMock invocation) {
-                return invocation.getArgument(0);
-            }
-        });
+        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Method method = CasePlanConsumer.class.getDeclaredMethod("recoverStaleProcessing");
         method.setAccessible(true);

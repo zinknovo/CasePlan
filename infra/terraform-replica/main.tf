@@ -188,7 +188,7 @@ resource "aws_cloudwatch_log_group" "worker" {
 resource "aws_lambda_function" "create_order" {
   function_name    = "${local.name_prefix}-create-order"
   role             = aws_iam_role.lambda_role.arn
-  runtime          = "java11"
+  runtime          = "java21"
   handler          = "com.caseplan.adapter.in.lambda.CreateOrderHandler::handleRequest"
   s3_bucket        = aws_s3_bucket.lambda_artifacts.id
   s3_key           = aws_s3_object.lambda_zip.key
@@ -228,7 +228,7 @@ resource "aws_lambda_function" "create_order" {
 resource "aws_lambda_function" "get_order_status" {
   function_name    = "${local.name_prefix}-get-order-status"
   role             = aws_iam_role.lambda_role.arn
-  runtime          = "java11"
+  runtime          = "java21"
   handler          = "com.caseplan.adapter.in.lambda.GetOrderStatusHandler::handleRequest"
   s3_bucket        = aws_s3_bucket.lambda_artifacts.id
   s3_key           = aws_s3_object.lambda_zip.key
@@ -262,7 +262,7 @@ resource "aws_lambda_function" "get_order_status" {
 resource "aws_lambda_function" "generate_caseplan_worker" {
   function_name    = "${local.name_prefix}-generate-caseplan-worker"
   role             = aws_iam_role.lambda_role.arn
-  runtime          = "java11"
+  runtime          = "java21"
   handler          = "com.caseplan.adapter.in.lambda.GenerateCasePlanWorkerHandler::handleRequest"
   s3_bucket        = aws_s3_bucket.lambda_artifacts.id
   s3_key           = aws_s3_object.lambda_zip.key
@@ -301,7 +301,6 @@ resource "aws_lambda_event_source_mapping" "worker_sqs" {
   event_source_arn                   = aws_sqs_queue.orders.arn
   function_name                      = aws_lambda_function.generate_caseplan_worker.arn
   batch_size                         = 1
-  function_response_types            = ["ReportBatchItemFailures"]
   maximum_batching_window_in_seconds = 0
   enabled                            = true
 }

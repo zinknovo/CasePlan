@@ -52,7 +52,7 @@ CasePlan 是一个法律案件录入与 Case Plan 生成系统，支持两种运
 
 ## 技术栈
 
-- Java 11
+- Java 21
 - Spring Boot 2.7
 - Spring Data JPA
 - PostgreSQL

@@ -9,12 +9,10 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 public interface CasePlanRepo extends JpaRepository<CasePlan, Long> {
     List<CasePlan> findAllByOrderByCreatedAtDesc();
     List<CasePlan> findByStatus(String status);
-    Optional<CasePlan> findFirstByStatusOrderByCreatedAtAsc(String status);
     List<CasePlan> findByStatusAndUpdatedAtBefore(String status, Instant before);
 
     @Query("SELECT cp FROM CasePlan cp " +
@@ -41,5 +39,15 @@ public interface CasePlanRepo extends JpaRepository<CasePlan, Long> {
             @Param("clientId") Long clientId,
             @Param("status") String status,
             Pageable pageable
+    );
+
+    @Query("SELECT cp.id FROM CasePlan cp " +
+            "JOIN cp.caseInfo ci " +
+            "WHERE ci.client.id = :clientId " +
+            "AND cp.status IN :statuses " +
+            "ORDER BY cp.id")
+    List<Long> findIdsByClientIdAndStatusIn(
+            @Param("clientId") Long clientId,
+            @Param("statuses") List<String> statuses
     );
 }

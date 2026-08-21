@@ -22,7 +22,7 @@ public class GetOrdersHandlerTest {
     @Test
     public void handleRequest_success_returns200AndItems() {
         CasePlanService service = mock(CasePlanService.class);
-        when(service.listAll()).thenReturn(List.of(buildPlan(9L, "completed")));
+        when(service.listAll()).thenReturn(List.of(buildPlan()));
         GetOrdersHandler handler = new GetOrdersHandler(service);
 
         APIGatewayProxyResponseEvent res = handler.handleRequest(null, null);
@@ -57,7 +57,7 @@ public class GetOrdersHandlerTest {
         assertEquals(Integer.valueOf(500), res.getStatusCode());
     }
 
-    private CasePlan buildPlan(Long id, String status) {
+    private CasePlan buildPlan() {
         Client client = new Client();
         client.setFirstName("Mia");
         client.setLastName("Johnson");
@@ -75,8 +75,8 @@ public class GetOrdersHandlerTest {
         info.setAttorney(attorney);
 
         CasePlan plan = new CasePlan();
-        plan.setId(id);
-        plan.setStatus(status);
+        plan.setId(9L);
+        plan.setStatus("completed");
         plan.setCreatedAt(Instant.parse("2026-02-16T00:00:00Z"));
         plan.setCaseInfo(info);
         return plan;

@@ -15,7 +15,7 @@ final class LambdaJsonResponse {
     static APIGatewayProxyResponseEvent json(ObjectMapper mapper, int statusCode, Map<String, Object> body) {
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
         response.setStatusCode(statusCode);
-        response.setHeaders(stringMapOf("Content-Type", "application/json"));
+        response.setHeaders(Map.of("Content-Type", "application/json"));
         try {
             response.setBody(mapper.writeValueAsString(body));
         } catch (JsonProcessingException e) {
@@ -29,14 +29,6 @@ final class LambdaJsonResponse {
         Map<String, Object> map = new HashMap<>();
         for (int i = 0; i < kv.length; i += 2) {
             map.put((String) kv[i], kv[i + 1]);
-        }
-        return map;
-    }
-
-    private static Map<String, String> stringMapOf(String... kv) {
-        Map<String, String> map = new HashMap<>();
-        for (int i = 0; i < kv.length; i += 2) {
-            map.put(kv[i], kv[i + 1]);
         }
         return map;
     }

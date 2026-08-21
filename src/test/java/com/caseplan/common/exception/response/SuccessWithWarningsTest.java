@@ -26,8 +26,8 @@ public class SuccessWithWarningsTest {
         List<Map<String, Object>> warnings = (List<Map<String, Object>>) map.get("warnings");
         assertEquals(2, warnings.size());
 
-        assertEquals("warning", warnings.get(0).get("type"));
-        assertEquals("CODE1", warnings.get(0).get("code"));
+        assertEquals("warning", warnings.getFirst().get("type"));
+        assertEquals("CODE1", warnings.getFirst().get("code"));
         assertEquals("msg1", warnings.get(0).get("message"));
         assertNotNull(warnings.get(0).get("detail"));
 

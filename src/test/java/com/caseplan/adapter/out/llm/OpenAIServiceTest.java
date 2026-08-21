@@ -141,7 +141,7 @@ public class OpenAIServiceTest {
 
         service.chat("Hi");
 
-        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
 
         HttpHeaders headers = captor.getValue().getHeaders();
@@ -156,15 +156,17 @@ public class OpenAIServiceTest {
 
         service.chat("Hello world");
 
-        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
 
         Map<String, Object> body = (Map<String, Object>) captor.getValue().getBody();
+        assertNotNull(body);
         assertEquals("gpt-4", body.get("model"));
         assertEquals(4096, body.get("max_tokens"));
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void chat_baseUrlWithTrailingSlash_noDoubleSlash() {
         OpenAIService serviceWithSlash = new OpenAIService(restTemplate, "https://api.example.com/v1/", "key", "gpt-4", "", "", 86400, 4096);
         mockChatResponse("response");
@@ -183,22 +185,23 @@ public class OpenAIServiceTest {
                 eq(HttpMethod.POST),
                 any(HttpEntity.class),
                 any(ParameterizedTypeReference.class)
-        )).thenReturn(new ResponseEntity<>(chatResponse("response"), HttpStatus.OK));
+        )).thenReturn(new ResponseEntity<>(chatResponse(), HttpStatus.OK));
 
         service.chat("Hi");
 
-        ArgumentCaptor<HttpEntity> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
 
         Map<String, Object> body = (Map<String, Object>) captor.getValue().getBody();
+        assertNotNull(body);
         Map<String, Object> thinking = (Map<String, Object>) body.get("thinking");
         assertEquals("disabled", thinking.get("type"));
     }
 
-    private Map<String, Object> chatResponse(String content) {
+    private Map<String, Object> chatResponse() {
         Map<String, Object> message = new HashMap<>();
         message.put("role", "assistant");
-        message.put("content", content);
+        message.put("content", "response");
 
         Map<String, Object> choice = new HashMap<>();
         choice.put("message", message);

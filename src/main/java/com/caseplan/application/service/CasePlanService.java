@@ -74,7 +74,7 @@ public class CasePlanService {
             Attorney existing = existingAttorneyByBar.get();
             if (!existing.getName().equals(command.getAttorneyName())) {
                 Map<String, Object> detail = new HashMap<>();
-                detail.put("existingAttorney", existing);
+                detail.put("existingAttorney", attorneySummary(existing));
                 throw new BlockException(
                         "ATTORNEY_NAME_MISMATCH",
                         "Attorney with barNumber " + command.getBarNumber()
@@ -100,7 +100,7 @@ public class CasePlanService {
                     client = existing;
                 } else {
                     Map<String, Object> detail = new HashMap<>();
-                    detail.put("existingClient", existing);
+                    detail.put("existingClient", clientSummary(existing));
                     WarningException warning = new WarningException(
                             "CLIENT_ID_NAME_MISMATCH",
                             "Client with idNumber " + command.getClientIdNumber()
@@ -131,7 +131,7 @@ public class CasePlanService {
                 client.getId(), primaryCause, opposingParty, startOfDay, endOfDay);
         if (!duplicateCases.isEmpty()) {
             Map<String, Object> detail = new HashMap<>();
-            detail.put("existingCase", duplicateCases.get(0));
+            detail.put("existingCase", caseInfoSummary(duplicateCases.getFirst()));
             throw new BlockException(
                     "DUPLICATE_CASE_SAME_DAY",
                     "Duplicate case: same client, cause of action, opposing party, and same day already exists",
@@ -143,7 +143,7 @@ public class CasePlanService {
                 client.getId(), primaryCause, opposingParty, Instant.ofEpochMilli(0), startOfDay);
         if (!similarCases.isEmpty()) {
             Map<String, Object> detail = new HashMap<>();
-            detail.put("existingCase", similarCases.get(0));
+            detail.put("existingCase", caseInfoSummary(similarCases.getFirst()));
             WarningException warning = new WarningException(
                     "SIMILAR_CASE_DIFFERENT_DAY",
                     "Similar case exists on different day. This might be a case update or reopening.",
@@ -160,8 +160,10 @@ public class CasePlanService {
         caseInfo.setAttorney(attorney);
         caseInfo.setCaseNumber(normalizeOptional(command.getDocketNumber()));
         caseInfo.setServiceNumber(generateNextServiceNumber(today));
-        caseInfo.setPrimaryCauseOfAction(command.getPrimaryCauseOfAction());
-        caseInfo.setOpposingParty(command.getOpposingParty());
+        caseInfo.setPrimaryCauseOfAction(primaryCause);
+        // Store the normalized value ("" instead of null) so the same-day duplicate
+        // check, which queries with "", can actually match rows created without one.
+        caseInfo.setOpposingParty(opposingParty);
         caseInfo.setRemedySought(command.getRemedySought());
         caseInfo.setAdditionalCauses(command.getAdditionalCauses());
         caseInfo.setPriorLegalActions(command.getPriorLegalActions());
@@ -196,7 +198,7 @@ public class CasePlanService {
                     && existing.getIdNumber() != null
                     && !existing.getIdNumber().equals(command.getClientIdNumber())) {
                 Map<String, Object> detail = new HashMap<>();
-                detail.put("existingClient", existing);
+                detail.put("existingClient", clientSummary(existing));
                 WarningException warning = new WarningException(
                         "CLIENT_NAME_ID_MISMATCH",
                         "Client with same name but different idNumber exists. Existing idNumber: " + existing.getIdNumber(),
@@ -213,7 +215,8 @@ public class CasePlanService {
         Client client = new Client();
         client.setFirstName(command.getClientFirstName());
         client.setLastName(command.getClientLastName());
-        client.setIdNumber(command.getClientIdNumber());
+        // Empty string would collide on the unique id_number constraint (NULL is fine, '' is not).
+        client.setIdNumber(normalizeOptional(command.getClientIdNumber()));
         return clientRepo.save(client);
     }
 
@@ -271,7 +274,7 @@ public class CasePlanService {
     @SuppressWarnings("null")
     public Map<String, Object> getStatus(Long id) {
         Optional<CasePlan> optional = casePlanRepo.findById(id);
-        if (!optional.isPresent()) {
+        if (optional.isEmpty()) {
             return null;
         }
 
@@ -291,7 +294,7 @@ public class CasePlanService {
     @SuppressWarnings("null")
     public Optional<CasePlan> retryFailed(Long id) {
         Optional<CasePlan> optional = casePlanRepo.findById(id);
-        if (!optional.isPresent()) {
+        if (optional.isEmpty()) {
             return Optional.empty();
         }
 
@@ -320,7 +323,7 @@ public class CasePlanService {
     @SuppressWarnings("null")
     public Optional<CasePlan> getForDownload(Long id) {
         Optional<CasePlan> optional = casePlanRepo.findById(id);
-        if (!optional.isPresent()) {
+        if (optional.isEmpty()) {
             return Optional.empty();
         }
 
@@ -337,5 +340,35 @@ public class CasePlanService {
         }
 
         return Optional.of(casePlan);
+    }
+
+    /**
+     * Detail payloads must never carry JPA entities: serializing them (Hibernate
+     * proxies, lazy associations, cycles) breaks both the Lambda and web response paths.
+     */
+    private Map<String, Object> clientSummary(Client client) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("id", client.getId());
+        summary.put("firstName", client.getFirstName());
+        summary.put("lastName", client.getLastName());
+        summary.put("idNumber", client.getIdNumber());
+        return summary;
+    }
+
+    private Map<String, Object> attorneySummary(Attorney attorney) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("id", attorney.getId());
+        summary.put("name", attorney.getName());
+        summary.put("barNumber", attorney.getBarNumber());
+        return summary;
+    }
+
+    private Map<String, Object> caseInfoSummary(CaseInfo caseInfo) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("id", caseInfo.getId());
+        summary.put("serviceNumber", caseInfo.getServiceNumber());
+        summary.put("caseNumber", caseInfo.getCaseNumber());
+        summary.put("createdAt", caseInfo.getCreatedAt() == null ? null : caseInfo.getCreatedAt().toString());
+        return summary;
     }
 }

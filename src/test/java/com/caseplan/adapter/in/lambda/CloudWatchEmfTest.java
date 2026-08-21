@@ -30,7 +30,7 @@ public class CloudWatchEmfTest {
             System.setOut(oldOut);
         }
 
-        String out = new String(bos.toByteArray(), StandardCharsets.UTF_8);
+        String out = bos.toString(StandardCharsets.UTF_8);
         assertTrue(out.contains("\"_aws\""));
         assertTrue(out.contains("\"CloudWatchMetrics\""));
         assertTrue(out.contains("\"Namespace\":\"CasePlan/Lambda\""));

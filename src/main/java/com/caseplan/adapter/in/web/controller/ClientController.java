@@ -44,10 +44,7 @@ public class ClientController {
     @GetMapping("/{id}")
     public ResponseEntity<Client> getById(@PathVariable Long id) {
         Optional<Client> optional = clientService.getById(id);
-        if (optional.isPresent()) {
-            return ResponseEntity.ok(optional.get());
-        }
-        return ResponseEntity.notFound().build();
+        return optional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -65,10 +62,7 @@ public class ClientController {
     @PutMapping("/{id}")
     public ResponseEntity<Client> update(@PathVariable Long id, @RequestBody @Valid UpdateClientRequest request) {
         Optional<Client> optional = clientService.update(id, request.getFirstName(), request.getLastName(), request.getIdNumber());
-        if (optional.isPresent()) {
-            return ResponseEntity.ok(optional.get());
-        }
-        return ResponseEntity.notFound().build();
+        return optional.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

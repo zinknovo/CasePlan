@@ -11,9 +11,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
@@ -57,37 +55,25 @@ public class CasePlanServiceTest {
         request.setRemedySought("Damages");
 
         // mock save 方法：返回传入的对象，并模拟 id 生成
-        when(clientRepo.save(any(Client.class))).thenAnswer(new Answer<Client>() {
-            @Override
-            public Client answer(InvocationOnMock invocation) {
-                Client client = invocation.getArgument(0);
-                client.setId(1L);
-                return client;
-            }
+        when(clientRepo.save(any(Client.class))).thenAnswer(invocation -> {
+            Client client = invocation.getArgument(0);
+            client.setId(1L);
+            return client;
         });
-        when(attorneyRepo.save(any(Attorney.class))).thenAnswer(new Answer<Attorney>() {
-            @Override
-            public Attorney answer(InvocationOnMock invocation) {
-                Attorney attorney = invocation.getArgument(0);
-                attorney.setId(1L);
-                return attorney;
-            }
+        when(attorneyRepo.save(any(Attorney.class))).thenAnswer(invocation -> {
+            Attorney attorney = invocation.getArgument(0);
+            attorney.setId(1L);
+            return attorney;
         });
-        when(caseInfoRepo.save(any(CaseInfo.class))).thenAnswer(new Answer<CaseInfo>() {
-            @Override
-            public CaseInfo answer(InvocationOnMock invocation) {
-                CaseInfo caseInfo = invocation.getArgument(0);
-                caseInfo.setId(1L);
-                return caseInfo;
-            }
+        when(caseInfoRepo.save(any(CaseInfo.class))).thenAnswer(invocation -> {
+            CaseInfo caseInfo = invocation.getArgument(0);
+            caseInfo.setId(1L);
+            return caseInfo;
         });
-        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(new Answer<CasePlan>() {
-            @Override
-            public CasePlan answer(InvocationOnMock invocation) {
-                CasePlan casePlan = invocation.getArgument(0);
-                casePlan.setId(1L);
-                return casePlan;
-            }
+        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(invocation -> {
+            CasePlan casePlan = invocation.getArgument(0);
+            casePlan.setId(1L);
+            return casePlan;
         });
         when(casePlanRepo.findAllByOrderByCreatedAtDesc()).thenReturn(Collections.emptyList());
         when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc(anyString()))
@@ -290,7 +276,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByIdNumber("ID-1")).thenReturn(Optional.of(existing));
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         CreateCasePlanResult result = service.create(request);
         assertEquals(1, result.getWarnings().size());
@@ -308,7 +294,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByIdNumber("ID-2")).thenReturn(Optional.of(existing));
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         service.create(request);
         verify(clientRepo, never()).save(any(Client.class));
@@ -321,7 +307,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Arrays.asList(new CaseInfo()));
+                Collections.emptyList()).thenReturn(Collections.singletonList(new CaseInfo()));
 
         CreateCasePlanResult result = service.create(request);
         assertEquals(1, result.getWarnings().size());
@@ -333,7 +319,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Arrays.asList(new CaseInfo()));
+                Collections.singletonList(new CaseInfo()));
 
         service.create(request);
     }
@@ -345,7 +331,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Arrays.asList(new CaseInfo()));
+                Collections.emptyList()).thenReturn(Collections.singletonList(new CaseInfo()));
 
         service.create(request);
     }
@@ -380,7 +366,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.of(existingByName));
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         CreateCasePlanResult result = service.create(request);
         assertEquals(1, result.getWarnings().size());
@@ -414,7 +400,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.of(existingByName));
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         CreateCasePlanResult result = service.create(request);
         assertEquals(0, result.getWarnings().size());
@@ -427,7 +413,7 @@ public class CasePlanServiceTest {
         when(attorneyRepo.findByBarNumber("BAR123")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         service.create(request);
         ArgumentCaptor<CaseInfo> captor = ArgumentCaptor.forClass(CaseInfo.class);
@@ -445,7 +431,7 @@ public class CasePlanServiceTest {
         when(attorneyRepo.findByBarNumber("BAR123")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         service.create(request);
         ArgumentCaptor<CaseInfo> captor = ArgumentCaptor.forClass(CaseInfo.class);
@@ -457,12 +443,7 @@ public class CasePlanServiceTest {
     public void create_whenCasePlanIdNull_doesNotEnqueue() {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(attorneyRepo.findByBarNumber("BAR123")).thenReturn(Optional.empty());
-        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(new Answer<CasePlan>() {
-            @Override
-            public CasePlan answer(InvocationOnMock invocation) {
-                return invocation.getArgument(0);
-            }
-        }); // keep id null
+        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(invocation -> invocation.getArgument(0)); // keep id null
 
         CasePlan plan = service.createCasePlan(request);
 
@@ -500,6 +481,72 @@ public class CasePlanServiceTest {
     }
 
     @Test
+    public void listAll_ignoresNullPlansNullCaseInfoAndExistingServiceNumbers() {
+        CasePlan withoutCaseInfo = new CasePlan();
+        CaseInfo existingInfo = new CaseInfo();
+        existingInfo.setServiceNumber("SRV-EXISTING");
+        CasePlan withExistingNumber = new CasePlan();
+        withExistingNumber.setCaseInfo(existingInfo);
+        when(casePlanRepo.findAllByOrderByCreatedAtDesc())
+                .thenReturn(Arrays.asList(null, withoutCaseInfo, withExistingNumber));
+
+        service.listAll();
+
+        verify(caseInfoRepo, never()).save(any(CaseInfo.class));
+    }
+
+    @Test
+    public void listAll_blankServiceNumberAndNullCreatedAt_usesTodayAndMalformedLatestAsZero() {
+        CaseInfo info = new CaseInfo();
+        info.setServiceNumber("   ");
+        CasePlan plan = new CasePlan();
+        plan.setCaseInfo(info);
+        CaseInfo malformedLatest = new CaseInfo();
+        malformedLatest.setServiceNumber("malformed");
+        when(casePlanRepo.findAllByOrderByCreatedAtDesc()).thenReturn(Collections.singletonList(plan));
+        when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc(anyString()))
+                .thenReturn(Optional.of(malformedLatest));
+
+        service.listAll();
+
+        assertTrue(info.getServiceNumber().matches("SRV-\\d{8}-0001"));
+        verify(caseInfoRepo).save(info);
+    }
+
+    @Test
+    public void listAll_latestServiceNumberEndingWithDash_restartsSequenceAtOne() {
+        CaseInfo info = new CaseInfo();
+        info.setCreatedAt(Instant.parse("2026-02-16T15:02:03Z"));
+        CasePlan plan = new CasePlan();
+        plan.setCaseInfo(info);
+        CaseInfo malformedLatest = new CaseInfo();
+        malformedLatest.setServiceNumber("SRV-20260216-");
+        when(casePlanRepo.findAllByOrderByCreatedAtDesc()).thenReturn(Collections.singletonList(plan));
+        when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc("SRV-20260216-"))
+                .thenReturn(Optional.of(malformedLatest));
+
+        service.listAll();
+
+        assertEquals("SRV-20260216-0001", info.getServiceNumber());
+    }
+
+    @Test
+    public void listAll_latestNullServiceNumber_restartsSequenceAtOne() {
+        CaseInfo info = new CaseInfo();
+        info.setCreatedAt(Instant.parse("2026-02-16T15:02:03Z"));
+        CasePlan plan = new CasePlan();
+        plan.setCaseInfo(info);
+        CaseInfo latestWithoutNumber = new CaseInfo();
+        when(casePlanRepo.findAllByOrderByCreatedAtDesc()).thenReturn(Collections.singletonList(plan));
+        when(caseInfoRepo.findTopByServiceNumberStartingWithOrderByServiceNumberDesc("SRV-20260216-"))
+                .thenReturn(Optional.of(latestWithoutNumber));
+
+        service.listAll();
+
+        assertEquals("SRV-20260216-0001", info.getServiceNumber());
+    }
+
+    @Test
     public void listPage_delegatesRepoWithNormalizedParams() {
         when(casePlanRepo.search(any(), any(), any())).thenReturn(new PageImpl<>(Collections.emptyList(), PageRequest.of(0, 1), 0));
 
@@ -522,7 +569,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.of(existingClient));
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         CreateCasePlanResult result = service.create(request);
         assertEquals(0, result.getWarnings().size());
@@ -537,7 +584,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         service.create(request);
         verify(clientRepo, never()).findByIdNumber(anyString());
@@ -551,7 +598,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         service.create(request);
         verify(caseInfoRepo, atLeastOnce()).findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
@@ -577,12 +624,7 @@ public class CasePlanServiceTest {
         failed.setGeneratedPlan("old");
 
         when(casePlanRepo.findById(10L)).thenReturn(Optional.of(failed));
-        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(new Answer<CasePlan>() {
-            @Override
-            public CasePlan answer(InvocationOnMock invocation) {
-                return invocation.getArgument(0);
-            }
-        });
+        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Optional<CasePlan> result = service.retryFailed(10L);
 
@@ -682,7 +724,7 @@ public class CasePlanServiceTest {
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.of(existingByName));
         when(caseInfoRepo.findByClientIdAndPrimaryCauseOfActionAndOpposingPartyAndCreatedAtBetween(
                 anyLong(), anyString(), anyString(), any(), any())).thenReturn(
-                Collections.emptyList(), Collections.emptyList());
+                Collections.emptyList()).thenReturn(Collections.emptyList());
 
         CreateCasePlanResult result = service.create(request);
         // existing client has null idNumber, so the ID mismatch branch is not entered
@@ -695,13 +737,10 @@ public class CasePlanServiceTest {
         failed.setId(40L);
         failed.setStatus("failed");
         when(casePlanRepo.findById(40L)).thenReturn(Optional.of(failed));
-        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(new Answer<CasePlan>() {
-            @Override
-            public CasePlan answer(InvocationOnMock invocation) {
-                CasePlan saved = invocation.getArgument(0);
-                saved.setId(null); // simulate null ID after save
-                return saved;
-            }
+        when(casePlanRepo.save(any(CasePlan.class))).thenAnswer(invocation -> {
+            CasePlan saved = invocation.getArgument(0);
+            saved.setId(null); // simulate null ID after save
+            return saved;
         });
 
         Optional<CasePlan> result = service.retryFailed(40L);

@@ -66,7 +66,7 @@ services:
         condition: service_started
 
   test:
-    image: maven:3.8-openjdk-11
+    image: maven:3.9-openjdk-21
     working_dir: /workspace
     volumes:
       - .:/workspace

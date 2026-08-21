@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -79,7 +80,9 @@ public class CasePlanFlowIT {
     @MockBean
     private LLMService llmService;
 
+    /** Replaces the real consumer bean so its background worker threads stay out of the IT run. */
     @MockBean
+    @SuppressWarnings("unused")
     private CasePlanConsumer disabledBackgroundConsumer;
 
     @Before
@@ -146,7 +149,12 @@ public class CasePlanFlowIT {
         Mockito.when(llmService.chat(Mockito.anyString())).thenThrow(new RuntimeException("LLM timeout"));
 
         CasePlanGenerationService generationService = new CasePlanGenerationService(casePlanRepo, llmService);
-        generationService.processWithRetry(planId);
+        try {
+            generationService.processWithRetry(planId);
+            fail("Expected terminal generation failure to propagate");
+        } catch (IllegalStateException expected) {
+            assertEquals("Case plan generation failed for id=" + planId, expected.getMessage());
+        }
 
         CasePlan updated = casePlanRepo.findById(planId).orElseThrow();
         assertEquals("failed", updated.getStatus());
@@ -191,18 +199,8 @@ public class CasePlanFlowIT {
         CountDownLatch start = new CountDownLatch(1);
         AtomicReference<Throwable> error = new AtomicReference<>();
 
-        Thread t1 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                invokeProcess(generationService, planId1, ready, start, error);
-            }
-        });
-        Thread t2 = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                invokeProcess(generationService, planId2, ready, start, error);
-            }
-        });
+        Thread t1 = new Thread(() -> invokeProcess(generationService, planId1, ready, start, error));
+        Thread t2 = new Thread(() -> invokeProcess(generationService, planId2, ready, start, error));
 
         t1.start();
         t2.start();
@@ -222,10 +220,7 @@ public class CasePlanFlowIT {
     }
 
     private long createCasePlan() throws Exception {
-        return createCasePlanWithBarNumber("BAR-12345678-1001");
-    }
-
-    private long createCasePlanWithBarNumber(String barNumber) throws Exception {
+        String barNumber = "BAR-12345678-1001";
         String body = "{"
                 + "\"clientFirstName\":\"John\","
                 + "\"clientLastName\":\"Doe\","
@@ -293,7 +288,10 @@ public class CasePlanFlowIT {
             AtomicReference<Throwable> error) {
         try {
             ready.countDown();
-            start.await(5, TimeUnit.SECONDS);
+            if (!start.await(5, TimeUnit.SECONDS)) {
+                error.compareAndSet(null, new IllegalStateException("start latch timed out"));
+                return;
+            }
             generationService.processWithRetry(planId);
         } catch (Throwable t) {
             error.compareAndSet(null, t);

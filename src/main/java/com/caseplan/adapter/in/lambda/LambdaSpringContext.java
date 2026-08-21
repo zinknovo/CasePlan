@@ -32,4 +32,14 @@ public final class LambdaSpringContext {
         }
         return context;
     }
+
+    /**
+     * Registers an existing context (e.g. the local web app's) so Lambda handlers
+     * reuse it instead of bootstrapping a second one. Only used outside Lambda.
+     */
+    public static void setContext(ConfigurableApplicationContext ctx) {
+        synchronized (LambdaSpringContext.class) {
+            context = ctx;
+        }
+    }
 }

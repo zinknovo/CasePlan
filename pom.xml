@@ -17,7 +17,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>21</java.version>
         <spring-framework.version>5.3.39</spring-framework.version>
         <tomcat.version>9.0.98</tomcat.version>
         <snakeyaml.version>2.2</snakeyaml.version>

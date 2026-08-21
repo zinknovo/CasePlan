@@ -301,7 +301,11 @@
 <script type="text/babel">
     const { useEffect, useMemo, useState } = React;
 
-    const API_BASE = "https://mc94chabh2.execute-api.us-east-2.amazonaws.com";
+    // Local dev/e2e: same-origin /orders routes (served by the local app).
+    // Deployed page: the API Gateway endpoint.
+    const API_BASE = (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+        ? ""
+        : "https://mc94chabh2.execute-api.us-east-2.amazonaws.com";
     const ORDERS_BASE = API_BASE + "/orders";
     const POLL_MS = 5000;
     const NAME_REGEX = /^[A-Za-z][A-Za-z .'-]{0,49}$/;

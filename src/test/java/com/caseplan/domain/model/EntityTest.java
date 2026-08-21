@@ -119,7 +119,6 @@ public class EntityTest {
     public void casePlan_preUpdate_updatesTimestamp() {
         CasePlan plan = new CasePlan();
         plan.onCreate();
-        java.time.Instant firstUpdate = plan.getUpdatedAt();
 
         // Small delay to ensure different timestamp
         plan.onUpdate();

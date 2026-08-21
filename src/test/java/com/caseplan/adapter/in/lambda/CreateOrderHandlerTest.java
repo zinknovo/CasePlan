@@ -14,6 +14,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Path;
 import javax.validation.Validation;
 import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -73,7 +74,7 @@ public class CreateOrderHandlerTest {
 
         CasePlan cp = new CasePlan();
         cp.setId(12L);
-        doReturn((ResponseEntity<?>) ResponseEntity.status(HttpStatus.CREATED).body(cp))
+        doReturn(ResponseEntity.status(HttpStatus.CREATED).body(cp))
                 .when(controller).create(any(CreateCasePlanRequest.class));
 
         CreateOrderHandler handler = new CreateOrderHandler(controller, validator);
@@ -92,7 +93,7 @@ public class CreateOrderHandlerTest {
         data.put("id", 55);
         Map<String, Object> wrapped = new HashMap<>();
         wrapped.put("data", data);
-        doReturn((ResponseEntity<?>) ResponseEntity.status(HttpStatus.CREATED).body(wrapped))
+        doReturn(ResponseEntity.status(HttpStatus.CREATED).body(wrapped))
                 .when(controller).create(any(CreateCasePlanRequest.class));
 
         CreateOrderHandler handler = new CreateOrderHandler(controller, validator);
@@ -119,7 +120,7 @@ public class CreateOrderHandlerTest {
         CasePlanController controller = mock(CasePlanController.class);
         Validator validator = mock(Validator.class);
         when(validator.validate(any(CreateCasePlanRequest.class))).thenReturn(Collections.emptySet());
-        doReturn((ResponseEntity<?>) ResponseEntity.status(HttpStatus.CREATED).body(new HashMap<>()))
+        doReturn(ResponseEntity.status(HttpStatus.CREATED).body(new HashMap<>()))
                 .when(controller).create(any(CreateCasePlanRequest.class));
 
         CreateOrderHandler handler = new CreateOrderHandler(controller, validator);
@@ -146,7 +147,7 @@ public class CreateOrderHandlerTest {
         when(validator.validate(any(CreateCasePlanRequest.class))).thenReturn(Collections.emptySet());
         Map<String, Object> body = new HashMap<>();
         body.put("id", "not-number");
-        doReturn((ResponseEntity<?>) ResponseEntity.status(HttpStatus.CREATED).body(body))
+        doReturn(ResponseEntity.status(HttpStatus.CREATED).body(body))
                 .when(controller).create(any(CreateCasePlanRequest.class));
 
         CreateOrderHandler handler = new CreateOrderHandler(controller, validator);
@@ -168,7 +169,7 @@ public class CreateOrderHandlerTest {
         CasePlanController controller = mock(CasePlanController.class);
         Validator validator = mock(Validator.class);
         when(validator.validate(any(CreateCasePlanRequest.class))).thenReturn(Collections.emptySet());
-        doReturn((ResponseEntity<?>) ResponseEntity.status(HttpStatus.CREATED).body(null))
+        doReturn(ResponseEntity.status(HttpStatus.CREATED).body(null))
                 .when(controller).create(any(CreateCasePlanRequest.class));
 
         CreateOrderHandler handler = new CreateOrderHandler(controller, validator);
@@ -179,7 +180,10 @@ public class CreateOrderHandlerTest {
     @Test
     public void handleRequest_invalidBarNumber_returns400() {
         CasePlanController controller = mock(CasePlanController.class);
-        Validator realValidator = Validation.buildDefaultValidatorFactory().getValidator();
+        Validator realValidator;
+        try (ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {
+            realValidator = validatorFactory.getValidator();
+        }
         CreateOrderHandler handler = new CreateOrderHandler(controller, realValidator);
 
         APIGatewayProxyRequestEvent req = new APIGatewayProxyRequestEvent();

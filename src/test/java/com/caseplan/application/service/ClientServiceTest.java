@@ -1,6 +1,7 @@
 package com.caseplan.application.service;
 
 import com.caseplan.adapter.out.persistence.ClientRepo;
+import com.caseplan.adapter.out.persistence.CasePlanRepo;
 import com.caseplan.common.exception.BlockException;
 import com.caseplan.common.exception.ValidationException;
 import com.caseplan.domain.model.Client;
@@ -8,9 +9,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,8 +20,10 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,6 +34,9 @@ public class ClientServiceTest {
     @Mock
     private ClientRepo clientRepo;
 
+    @Mock
+    private CasePlanRepo casePlanRepo;
+
     @InjectMocks
     private ClientService clientService;
 
@@ -40,13 +44,10 @@ public class ClientServiceTest {
     public void create_newClient_returnsCreatedTrue() {
         when(clientRepo.findByIdNumber("ID-1")).thenReturn(Optional.empty());
         when(clientRepo.findByFirstNameAndLastName("John", "Doe")).thenReturn(Optional.empty());
-        when(clientRepo.save(any(Client.class))).thenAnswer(new Answer<Client>() {
-            @Override
-            public Client answer(InvocationOnMock invocation) {
-                Client client = invocation.getArgument(0);
-                client.setId(1L);
-                return client;
-            }
+        when(clientRepo.save(any(Client.class))).thenAnswer(invocation -> {
+            Client client = invocation.getArgument(0);
+            client.setId(1L);
+            return client;
         });
 
         CreateClientResult result = clientService.create("John", "Doe", "ID-1");
@@ -282,6 +283,8 @@ public class ClientServiceTest {
     @Test
     public void delete_existing_returnsTrue() {
         when(clientRepo.existsById(7L)).thenReturn(true);
+        when(casePlanRepo.findIdsByClientIdAndStatusIn(eq(7L), any()))
+                .thenReturn(Collections.emptyList());
 
         boolean result = clientService.delete(7L);
 
@@ -296,5 +299,26 @@ public class ClientServiceTest {
         boolean result = clientService.delete(7L);
 
         assertFalse(result);
+    }
+
+    @Test
+    public void delete_withActiveCasePlans_throws409AndReturnsBlockingIds() {
+        when(clientRepo.existsById(7L)).thenReturn(true);
+        when(casePlanRepo.findIdsByClientIdAndStatusIn(
+                eq(7L),
+                eq(java.util.Arrays.asList("pending", "processing"))))
+                .thenReturn(java.util.Arrays.asList(71L, 72L));
+
+        try {
+            clientService.delete(7L);
+            fail("Expected active caseplans to block client deletion");
+        } catch (BlockException ex) {
+            assertEquals("CLIENT_DELETE_ACTIVE_CASEPLANS", ex.getCode());
+            assertTrue(ex.getDetail() instanceof java.util.Map);
+            Object ids = ((java.util.Map<?, ?>) ex.getDetail()).get("activeCasePlanIds");
+            assertEquals(java.util.Arrays.asList(71L, 72L), ids);
+        }
+
+        verify(clientRepo, never()).deleteById(7L);
     }
 }

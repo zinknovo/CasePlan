@@ -1,7 +1,6 @@
 package com.caseplan.adapter.out.llm;
 
 import com.caseplan.application.port.out.ChatMessage;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -52,9 +51,9 @@ public class BaseLLMServiceTest {
         }
 
         // Expose exchangeForMapBody for testing
-        Map<String, Object> testExchangeForMapBody(String url) {
+        Map<String, Object> testExchangeForMapBody() {
             HttpHeaders headers = new HttpHeaders();
-            return exchangeForMapBody(restTemplate, url, HttpMethod.GET, new HttpEntity<>(headers), "null body error");
+            return exchangeForMapBody(restTemplate, "https://api.example.com/test", HttpMethod.GET, new HttpEntity<>(headers), "null body error");
         }
     }
 
@@ -381,7 +380,7 @@ public class BaseLLMServiceTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), any(ParameterizedTypeReference.class)))
                 .thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
 
-        service.testExchangeForMapBody("https://api.example.com/test");
+        service.testExchangeForMapBody();
     }
 
     @SuppressWarnings("unchecked")
@@ -395,7 +394,7 @@ public class BaseLLMServiceTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(), any(ParameterizedTypeReference.class)))
                 .thenReturn(new ResponseEntity<>(body, HttpStatus.OK));
 
-        Map<String, Object> result = service.testExchangeForMapBody("https://api.example.com/test");
+        Map<String, Object> result = service.testExchangeForMapBody();
         assertEquals("value", result.get("key"));
     }
 

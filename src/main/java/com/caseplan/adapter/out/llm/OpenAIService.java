@@ -94,7 +94,7 @@ public class OpenAIService extends BaseLLMService {
             throw new IllegalStateException("LLM API returned no choices");
         }
 
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+        Map<String, Object> message = (Map<String, Object>) choices.getFirst().get("message");
         if (message == null) {
             return "";
         }

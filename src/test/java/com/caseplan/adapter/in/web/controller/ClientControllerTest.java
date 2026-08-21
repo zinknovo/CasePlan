@@ -182,7 +182,6 @@ public class ClientControllerTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void listClientCasePlans_withStatus_returnsPagedResponse() {
         CasePlan plan = new CasePlan();
         plan.setId(77L);

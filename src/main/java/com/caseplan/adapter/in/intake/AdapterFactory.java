@@ -27,8 +27,7 @@ public class AdapterFactory {
             return Optional.empty();
         }
         String normalized = source.trim();
-        for (int i = 0; i < adapters.size(); i++) {
-            BaseIntakeAdapter a = adapters.get(i);
+        for (BaseIntakeAdapter a : adapters) {
             if (normalized.equalsIgnoreCase(a.getSourceName())) {
                 return Optional.of(a);
             }

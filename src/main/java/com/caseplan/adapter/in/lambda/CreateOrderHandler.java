@@ -62,7 +62,6 @@ public class CreateOrderHandler implements RequestHandler<APIGatewayProxyRequest
             Object body = casePlanController.create(req).getBody();
             Long planId = extractPlanId(body);
             if (planId == null) {
-                statusCode = 500;
                 return LambdaJsonResponse.json(MAPPER, statusCode, LambdaJsonResponse.mapOf("message", "created but cannot extract plan id"));
             }
 
@@ -113,13 +112,13 @@ public class CreateOrderHandler implements RequestHandler<APIGatewayProxyRequest
             return ((CasePlan) body).getId();
         }
 
-        Map<String, Object> map = MAPPER.convertValue(body, new TypeReference<Map<String, Object>>() {});
+        Map<String, Object> map = MAPPER.convertValue(body, new TypeReference<>() {});
         if (map.get("id") != null) {
             return toLong(map.get("id"));
         }
         Object data = map.get("data");
         if (data != null) {
-            Map<String, Object> dataMap = MAPPER.convertValue(data, new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> dataMap = MAPPER.convertValue(data, new TypeReference<>() {});
             return toLong(dataMap.get("id"));
         }
         return null;

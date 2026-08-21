@@ -17,7 +17,7 @@ import java.util.Map;
 @Component
 public class JsonAAdapter extends BaseIntakeAdapter {
 
-    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<Map<String, Object>>() {
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
     };
 
     private final ObjectMapper objectMapper = new ObjectMapper();

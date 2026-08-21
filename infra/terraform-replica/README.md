@@ -2,7 +2,7 @@
 
 This directory provisions an **ephemeral replica** of core CasePlan infra:
 
-- 3 Lambda functions (Java 11, same handlers as prod app)
+- 3 Lambda functions (Java 21, same handlers as prod app)
   - `CreateOrderHandler`
   - `GetOrderStatusHandler`
   - `GenerateCasePlanWorkerHandler`
@@ -75,7 +75,8 @@ terraform destroy -auto-approve
 
 - Worker Lambda needs outbound internet/NAT and valid LLM key to generate final content.
 - If your VPC uses an SQS Interface Endpoint, set `sqs_vpce_security_group_id` so Terraform can allow HTTPS from the new Lambda SG.
-- If no key is set, order creation/status still works; generation can fail and eventually land in DLQ.
+- If no key is set, order creation/status still works; generation failures propagate to SQS, which
+  redelivers the message until `maxReceiveCount` is exceeded and then moves it to the DLQ.
 
 ## New Backend API Surface (Web App)
 

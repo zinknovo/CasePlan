@@ -1,6 +1,6 @@
-# Build stage (Maven + JDK 11)
+# Build stage (Maven + JDK 21)
 # 与 complog 同款，本地有则直接复用
-FROM maven:3.8-openjdk-11 AS build
+FROM maven:3.9-openjdk-21 AS build
 WORKDIR /app
 
 COPY pom.xml .
@@ -10,7 +10,7 @@ COPY src ./src
 RUN mvn package -DskipTests -B
 
 # Run stage
-FROM eclipse-temurin:11-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080

@@ -1,6 +1,7 @@
 package com.caseplan.application.service;
 
 import com.caseplan.adapter.out.persistence.ClientRepo;
+import com.caseplan.adapter.out.persistence.CasePlanRepo;
 import com.caseplan.common.exception.BlockException;
 import com.caseplan.common.exception.ValidationException;
 import com.caseplan.domain.model.Client;
@@ -11,7 +12,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,6 +23,7 @@ import java.util.Optional;
 public class ClientService {
 
     private final ClientRepo clientRepo;
+    private final CasePlanRepo casePlanRepo;
 
     public CreateClientResult create(String firstName, String lastName, String idNumber) {
         String normalizedFirstName = normalizeRequired(firstName, "Client first name is required");
@@ -128,6 +132,21 @@ public class ClientService {
         if (!clientRepo.existsById(id)) {
             return false;
         }
+
+        List<Long> activeCasePlanIds = casePlanRepo.findIdsByClientIdAndStatusIn(
+                id,
+                Arrays.asList("pending", "processing")
+        );
+        if (!activeCasePlanIds.isEmpty()) {
+            Map<String, Object> detail = new HashMap<>();
+            detail.put("activeCasePlanIds", activeCasePlanIds);
+            throw new BlockException(
+                    "CLIENT_DELETE_ACTIVE_CASEPLANS",
+                    "Client cannot be deleted while caseplans are active",
+                    detail
+            );
+        }
+
         clientRepo.deleteById(id);
         return true;
     }

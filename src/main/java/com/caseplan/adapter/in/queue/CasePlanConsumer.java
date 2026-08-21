@@ -39,21 +39,11 @@ public class CasePlanConsumer {
     public void startWorker() {
         recoverStaleProcessing();
         recoverLostPendingQueueItems();
-        Thread reconcileWorker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                runReconcileLoop();
-            }
-        }, "caseplan-reconcile");
+        Thread reconcileWorker = new Thread(this::runReconcileLoop, "caseplan-reconcile");
         reconcileWorker.setDaemon(false);
         reconcileWorker.start();
 
-        Thread worker = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                runWorker();
-            }
-        }, "caseplan-consumer");
+        Thread worker = new Thread(this::runWorker, "caseplan-consumer");
         worker.setDaemon(false);
         worker.start();
     }
@@ -103,6 +93,7 @@ public class CasePlanConsumer {
                 generationService.processWithRetry(Long.parseLong(idStr));
             } catch (Exception e) {
                 try {
+                    //noinspection BusyWait - intentional backoff before retrying a failed Redis/IO call
                     Thread.sleep(REDIS_ERROR_BACKOFF_MS);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
@@ -117,12 +108,14 @@ public class CasePlanConsumer {
         while (true) {
             try {
                 recoverLostPendingQueueItems();
+                //noinspection BusyWait - intentional interval between reconciliation passes
                 Thread.sleep(TimeUnit.SECONDS.toMillis(PENDING_RECONCILE_INTERVAL_SECONDS));
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
                 break;
             } catch (Exception e) {
                 try {
+                    //noinspection BusyWait - intentional backoff before retrying a failed Redis/IO call
                     Thread.sleep(REDIS_ERROR_BACKOFF_MS);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();

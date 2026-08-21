@@ -8,9 +8,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
 
 import java.util.Optional;
 
@@ -35,13 +33,10 @@ public class AttorneyServiceTest {
     public void create_newAttorney_returns201State() {
         when(attorneyRepo.findByBarNumber("BAR-1")).thenReturn(Optional.empty());
         when(attorneyRepo.findByName("Jane Smith")).thenReturn(Optional.empty());
-        when(attorneyRepo.save(any(Attorney.class))).thenAnswer(new Answer<Attorney>() {
-            @Override
-            public Attorney answer(InvocationOnMock invocation) {
-                Attorney attorney = invocation.getArgument(0);
-                attorney.setId(1L);
-                return attorney;
-            }
+        when(attorneyRepo.save(any(Attorney.class))).thenAnswer(invocation -> {
+            Attorney attorney = invocation.getArgument(0);
+            attorney.setId(1L);
+            return attorney;
         });
 
         CreateAttorneyResult result = attorneyService.create("Jane Smith", "BAR-1");

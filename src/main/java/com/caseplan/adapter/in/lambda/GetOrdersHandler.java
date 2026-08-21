@@ -26,6 +26,8 @@ public class GetOrdersHandler implements RequestHandler<APIGatewayProxyRequestEv
 
     private final CasePlanService casePlanService;
 
+    /** No-arg constructor required by the AWS Lambda runtime, which instantiates handlers reflectively. */
+    @SuppressWarnings("unused")
     public GetOrdersHandler() {
         ConfigurableApplicationContext ctx = LambdaSpringContext.getContext();
         this.casePlanService = ctx.getBean(CasePlanService.class);
@@ -58,7 +60,7 @@ public class GetOrdersHandler implements RequestHandler<APIGatewayProxyRequestEv
                     LambdaJsonResponse.mapOf("message", "internal error", "error", e.getMessage()));
         } finally {
             long duration = System.currentTimeMillis() - start;
-            String statusBucket = statusCode < 400 ? "2xx" : statusCode < 500 ? "4xx" : "5xx";
+            String statusBucket = statusCode == 200 ? "2xx" : "5xx";
             CloudWatchEmf.record()
                     .dimension("handler", "GetOrders")
                     .dimension("status", statusBucket)

@@ -1,7 +1,6 @@
 package com.caseplan.adapter.in.web.controller;
 
 import com.caseplan.adapter.in.intake.AdapterFactory;
-import com.caseplan.adapter.in.intake.adapter.BaseIntakeAdapter;
 import com.caseplan.adapter.in.intake.adapter.JsonAAdapter;
 import com.caseplan.adapter.in.intake.model.*;
 

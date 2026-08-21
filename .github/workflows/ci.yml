@@ -28,20 +28,20 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      CI_POSTGRES_DB: ${{ vars.CI_POSTGRES_DB != '' && vars.CI_POSTGRES_DB || 'dev_db' }}
-      CI_POSTGRES_USER: ${{ vars.CI_POSTGRES_USER != '' && vars.CI_POSTGRES_USER || 'ci_test_user' }}
-      CI_POSTGRES_PASSWORD: ${{ secrets.CI_POSTGRES_PASSWORD }}
+      CI_POSTGRES_DB: caseplan_ci
+      CI_POSTGRES_USER: caseplan_ci
+      CI_POSTGRES_PASSWORD: caseplan_ci_password
     services:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: ${{ env.CI_POSTGRES_DB }}
-          POSTGRES_USER: ${{ env.CI_POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ env.CI_POSTGRES_PASSWORD }}
+          POSTGRES_DB: caseplan_ci
+          POSTGRES_USER: caseplan_ci
+          POSTGRES_PASSWORD: caseplan_ci_password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U ${{ env.CI_POSTGRES_USER }} -d ${{ env.CI_POSTGRES_DB }}"
+          --health-cmd="pg_isready -U caseplan_ci -d caseplan_ci"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -63,7 +63,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "11"
+          java-version: "21"
           cache: maven
 
       - name: Unit + Integration Tests
@@ -77,15 +77,69 @@ jobs:
 
   frontend-e2e:
     runs-on: ubuntu-latest
+    env:
+      CI_POSTGRES_DB: caseplan_ci
+      CI_POSTGRES_USER: caseplan_ci
+      CI_POSTGRES_PASSWORD: caseplan_ci_password
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: caseplan_ci
+          POSTGRES_USER: caseplan_ci
+          POSTGRES_PASSWORD: caseplan_ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U caseplan_ci -d caseplan_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "npm"
+
+      - name: Install PSQL Client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Start Backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/${{ env.CI_POSTGRES_DB }}
+          SPRING_DATASOURCE_USERNAME: ${{ env.CI_POSTGRES_USER }}
+          SPRING_DATASOURCE_PASSWORD: ${{ env.CI_POSTGRES_PASSWORD }}
+          SPRING_REDIS_HOST: localhost
+          SPRING_REDIS_PORT: 6379
+        run: |
+          nohup mvn -B spring-boot:run -Dspring-boot.run.arguments="--server.port=8080 --caseplan.consumer.enabled=false" > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 90); do
+            curl -sf http://localhost:8080/actuator/health && exit 0
+            sleep 2
+          done
+          tail -100 /tmp/backend.log
+          exit 1
 
       - name: Install JS Dependencies
         run: npm ci
@@ -94,4 +148,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Run Frontend E2E
+        env:
+          FRONTEND_URL: http://localhost:8080
+          E2E_PSQL: "PGPASSWORD=${{ env.CI_POSTGRES_PASSWORD }} psql -h localhost -U ${{ env.CI_POSTGRES_USER }} -d ${{ env.CI_POSTGRES_DB }}"
         run: npm run test:e2e

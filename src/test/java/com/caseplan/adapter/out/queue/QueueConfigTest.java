@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 public class QueueConfigTest {
 
     @Test
+    @SuppressWarnings("unchecked")
     public void queuePort_providerSqs_returnsSqsAdapter() {
         QueueConfig config = new QueueConfig();
         ObjectProvider<StringRedisTemplate> provider = mock(ObjectProvider.class);
@@ -21,6 +22,7 @@ public class QueueConfigTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void queuePort_providerRedis_returnsRedisAdapter() {
         QueueConfig config = new QueueConfig();
         ObjectProvider<StringRedisTemplate> provider = mock(ObjectProvider.class);
@@ -31,6 +33,7 @@ public class QueueConfigTest {
     }
 
     @Test(expected = IllegalStateException.class)
+    @SuppressWarnings("unchecked")
     public void queuePort_providerRedis_withoutTemplate_throws() {
         QueueConfig config = new QueueConfig();
         ObjectProvider<StringRedisTemplate> provider = mock(ObjectProvider.class);
@@ -39,6 +42,7 @@ public class QueueConfigTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void queuePort_defaultProvider_returnsRedisAdapter() {
         QueueConfig config = new QueueConfig();
         ObjectProvider<StringRedisTemplate> provider = mock(ObjectProvider.class);
