@@ -247,10 +247,23 @@ jobs:
     env:
       DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'staging' }}
       AWS_REGION: ${{ vars.AWS_REGION }}
+      PROJECT_NAME: ${{ vars.PROJECT_NAME }}
+      VPC_ID: ${{ vars.VPC_ID }}
+      LAMBDA_SUBNET_IDS_JSON: ${{ vars.LAMBDA_SUBNET_IDS_JSON }}
+      ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON: ${{ vars.ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON }}
+      RDS_SECURITY_GROUP_ID: ${{ vars.RDS_SECURITY_GROUP_ID }}
+      SQS_VPCE_SECURITY_GROUP_ID: ${{ vars.SQS_VPCE_SECURITY_GROUP_ID }}
+      DATASOURCE_URL: ${{ vars.DATASOURCE_URL }}
+      DATASOURCE_USERNAME: ${{ vars.DATASOURCE_USERNAME }}
+      CORS_ALLOW_ORIGINS_JSON: ${{ vars.CORS_ALLOW_ORIGINS_JSON }}
+      LLM_PROVIDER: ${{ vars.LLM_PROVIDER }}
       TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
       TF_STATE_REGION: ${{ vars.TF_STATE_REGION }}
       TF_LOCK_TABLE: ${{ vars.TF_LOCK_TABLE }}
       TF_STATE_KEY: ${{ vars.TF_STATE_KEY }}
+      DATASOURCE_PASSWORD: ${{ secrets.DATASOURCE_PASSWORD }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
       AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
       FRONTEND_S3_BUCKET: ${{ vars.FRONTEND_S3_BUCKET != '' && vars.FRONTEND_S3_BUCKET || 'caseplan-frontend-727766004034-use2' }}
       FRONTEND_DISTRIBUTION_ID: ${{ vars.FRONTEND_DISTRIBUTION_ID != '' && vars.FRONTEND_DISTRIBUTION_ID || 'E23XI74DK4D2MF' }}
@@ -306,6 +319,38 @@ jobs:
           aws cloudfront create-invalidation \
             --distribution-id "${FRONTEND_DISTRIBUTION_ID}" \
             --paths "/" "/index.html"
+
+      - name: Render ci.auto.tfvars
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: |
+          set -euo pipefail
+          : "${PROJECT_NAME:=caseplan}"
+          : "${AWS_REGION:=us-east-2}"
+          : "${ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON:=[]}"
+          : "${SQS_VPCE_SECURITY_GROUP_ID:=}"
+          : "${CORS_ALLOW_ORIGINS_JSON:=[\"*\"]}"
+          : "${LLM_PROVIDER:=openai}"
+          : "${OPENAI_API_KEY:=}"
+          : "${DEEPSEEK_API_KEY:=}"
+
+          {
+            echo "aws_region                           = \"${AWS_REGION}\""
+            echo "project_name                         = \"${PROJECT_NAME}\""
+            echo "environment                          = \"${DEPLOY_ENV}\""
+            echo "vpc_id                               = \"${VPC_ID}\""
+            echo "lambda_subnet_ids                    = ${LAMBDA_SUBNET_IDS_JSON}"
+            echo "additional_lambda_security_group_ids = ${ADDITIONAL_LAMBDA_SECURITY_GROUP_IDS_JSON}"
+            echo "rds_security_group_id                = \"${RDS_SECURITY_GROUP_ID}\""
+            echo "sqs_vpce_security_group_id           = \"${SQS_VPCE_SECURITY_GROUP_ID}\""
+            echo "datasource_url                       = \"${DATASOURCE_URL}\""
+            echo "datasource_username                  = \"${DATASOURCE_USERNAME}\""
+            echo "datasource_password                  = \"${DATASOURCE_PASSWORD}\""
+            echo "llm_provider                         = \"${LLM_PROVIDER}\""
+            echo "openai_api_key                       = \"${OPENAI_API_KEY}\""
+            echo "deepseek_api_key                     = \"${DEEPSEEK_API_KEY}\""
+            echo "cors_allow_origins                   = ${CORS_ALLOW_ORIGINS_JSON}"
+          } > ci.auto.tfvars
+          terraform fmt ci.auto.tfvars
 
       - name: Terraform Destroy (ephemeral replica)
         if: steps.terraform-apply.outcome == 'success'

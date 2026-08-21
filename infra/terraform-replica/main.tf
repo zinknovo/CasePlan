@@ -1,6 +1,12 @@
 terraform {
   required_version = ">= 1.5.0"
 
+  # Remote state via partial configuration: bucket/key/region/dynamodb_table
+  # are supplied with -backend-config in the CD workflow (cd-terraform.yml).
+  # Without this block the -backend-config flags are ignored and state stays
+  # local to the runner, which orphans every applied replica.
+  backend "s3" {}
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
