@@ -1,28 +1,11 @@
 name: cd-terraform
 
+# AWS environment is currently torn down (cost saving): the staging replica
+# from the last deploy was never destroyed and the tfstate/frontend buckets
+# are gone, so auto-triggered runs would fail at the orphan check.
+# Run manually via workflow_dispatch, or restore the push/pull_request
+# triggers below when the AWS environment is rebuilt.
 on:
-  pull_request:
-    paths:
-      - "infra/terraform-replica/**"
-      - "src/**"
-      - "tests/**"
-      - "pom.xml"
-      - "package.json"
-      - "package-lock.json"
-      - "playwright.config.js"
-      - ".github/workflows/cd-terraform.yml"
-  push:
-    branches:
-      - main
-    paths:
-      - "infra/terraform-replica/**"
-      - "src/**"
-      - "tests/**"
-      - "pom.xml"
-      - "package.json"
-      - "package-lock.json"
-      - "playwright.config.js"
-      - ".github/workflows/cd-terraform.yml"
   workflow_dispatch:
     inputs:
       environment:
