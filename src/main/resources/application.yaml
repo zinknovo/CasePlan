@@ -23,6 +23,14 @@ management:
   metrics:
     tags:
       application: caseplan
+    distribution:
+      # Export http.server.requests as a Prometheus histogram so p95/p99 can
+      # be computed with histogram_quantile(). Without this, Micrometer exports
+      # a summary (count/sum only) and quantiles are unavailable.
+      percentiles-histogram:
+        http.server.requests: true
+      slo:
+        http.server.requests: 10ms, 50ms, 100ms, 250ms, 500ms, 1s, 2s, 5s
 
 # Queue abstraction: set queue.provider to "redis" (local) or "sqs" (AWS Lambda)
 queue:

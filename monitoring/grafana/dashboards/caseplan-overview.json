@@ -6,6 +6,7 @@
   "schemaVersion": 39,
   "version": 1,
   "refresh": "15s",
+  "time": { "from": "now-30m", "to": "now" },
   "panels": [
     {
       "id": 1,
@@ -37,11 +38,11 @@
     {
       "id": 4,
       "type": "timeseries",
-      "title": "HTTP RPS (5m)",
+      "title": "HTTP RPS (1m)",
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"caseplan\"}[5m])) or vector(0)",
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"caseplan\"}[1m])) or vector(0)",
           "legendFormat": "rps",
           "refId": "A"
         }
@@ -50,14 +51,14 @@
     {
       "id": 5,
       "type": "timeseries",
-      "title": "HTTP Avg Latency (ms, 5m)",
+      "title": "HTTP Avg Latency (ms, 1m)",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "fieldConfig": {
         "defaults": { "unit": "ms" }
       },
       "targets": [
         {
-          "expr": "(sum(rate(http_server_requests_seconds_sum{application=\"caseplan\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"caseplan\"}[5m])) * 1000) or vector(0)",
+          "expr": "(sum(rate(http_server_requests_seconds_sum{application=\"caseplan\"}[1m])) / sum(rate(http_server_requests_seconds_count{application=\"caseplan\"}[1m])) * 1000) or vector(0)",
           "legendFormat": "avg",
           "refId": "A"
         }
@@ -88,6 +89,22 @@
         {
           "expr": "hikaricp_connections_active{application=\"caseplan\"}",
           "legendFormat": "active",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "HTTP P95 Latency (ms, 1m)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "fieldConfig": {
+        "defaults": { "unit": "ms" }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"caseplan\"}[1m])) by (le, uri))",
+          "legendFormat": "p95 {{uri}}",
           "refId": "A"
         }
       ]
