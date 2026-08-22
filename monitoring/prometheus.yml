@@ -5,4 +5,6 @@ scrape_configs:
   - job_name: 'caseplan'
     metrics_path: '/actuator/prometheus'
     static_configs:
+      # The app runs on the host (see docker-compose.yml: the `web` service is behind the
+      # `app` profile). docker-compose.yml maps host.docker.internal for non-Desktop hosts.
       - targets: ['host.docker.internal:8080']
