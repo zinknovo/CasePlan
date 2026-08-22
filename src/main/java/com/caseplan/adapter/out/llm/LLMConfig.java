@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Locale;
+
 /**
  * Configuration: registers LLM-related beans based on llm.provider.
  * openai = OpenAI-compatible, anthropic = Anthropic Claude, mock = canned response (no API call).
@@ -38,7 +40,7 @@ public class LLMConfig {
             @Value("${llm.anthropic.model-refresh-seconds:2592000}") long anthropicModelRefreshSeconds,
             @Value("${llm.anthropic.max-tokens:4000}") int anthropicMaxTokens) {
 
-        String normalizedProvider = provider == null ? "" : provider.trim().toLowerCase();
+        String normalizedProvider = provider == null ? "" : provider.trim().toLowerCase(Locale.ROOT);
         if ("anthropic".equals(normalizedProvider)) {
             return new AnthropicService(
                     llmRestTemplate,

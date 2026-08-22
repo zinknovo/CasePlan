@@ -119,12 +119,22 @@ public class HttpLLMServiceTest {
         assertEquals("Bearer test-key", headers.getFirst(HttpHeaders.AUTHORIZATION));
     }
 
+    /** Unset {@code ${ENV:}} placeholders bind to "", so blank counts as missing just like null. */
     @Test
     public void requireApiKey_missingKey_errorNamesTheProperty() {
-        service = new TestHttpLLMService(restTemplate, null, "model", 86400);
+        for (String missing : Arrays.asList(null, "", "   ")) {
+            service = new TestHttpLLMService(restTemplate, missing, "model", 86400);
 
-        NullPointerException error = assertThrows(NullPointerException.class, () -> service.jsonHeaders());
-        assertTrue(error.getMessage().contains("llm.test.api-key"));
+            IllegalStateException error = assertThrows(IllegalStateException.class, () -> service.jsonHeaders());
+            assertTrue(error.getMessage().contains("llm.test.api-key"));
+        }
+    }
+
+    @Test
+    public void requireApiKey_trimsSurroundingWhitespace() {
+        service = new TestHttpLLMService(restTemplate, "  padded-key  ", "model", 86400);
+
+        assertEquals("Bearer padded-key", service.jsonHeaders().getFirst(HttpHeaders.AUTHORIZATION));
     }
 
     // ==================== message mapping / body ====================

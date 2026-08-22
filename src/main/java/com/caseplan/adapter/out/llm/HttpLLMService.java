@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Base for LLM providers reached over HTTP. Owns everything such providers share: the
@@ -87,8 +86,18 @@ public abstract class HttpLLMService extends BaseLLMService {
         return headers;
     }
 
+    /**
+     * The API key, or a hard failure naming the property that supplies it. Keys are bound from
+     * {@code ${ENV_VAR:}}-style placeholders, so an unset variable arrives as an empty string
+     * rather than null -- both count as missing, otherwise the request goes out with an empty
+     * credential and comes back as an opaque 401.
+     */
     protected final String requireApiKey() {
-        return Objects.requireNonNull(apiKey, apiKeyProperty + " is required");
+        String key = trimToNull(apiKey);
+        if (key == null) {
+            throw new IllegalStateException(apiKeyProperty + " is required");
+        }
+        return key;
     }
 
     /** The {@code model} / {@code max_tokens} / {@code messages} body both providers start from. */
