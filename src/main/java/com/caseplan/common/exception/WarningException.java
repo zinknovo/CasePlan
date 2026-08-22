@@ -1,10 +1,11 @@
 package com.caseplan.common.exception;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@Getter
 public class WarningException extends BaseAppException {
+
+    private static final long serialVersionUID = 1L;
+
     public WarningException(String code, String message, Object detail) {
         super("warning", code, message, detail, HttpStatus.OK);
     }

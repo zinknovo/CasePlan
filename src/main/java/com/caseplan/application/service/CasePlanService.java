@@ -95,10 +95,8 @@ public class CasePlanService {
             Optional<Client> existingClientByIdNumber = clientRepo.findByIdNumber(command.getClientIdNumber());
             if (existingClientByIdNumber.isPresent()) {
                 Client existing = existingClientByIdNumber.get();
-                if (existing.getFirstName().equals(command.getClientFirstName())
-                        && existing.getLastName().equals(command.getClientLastName())) {
-                    client = existing;
-                } else {
+                if (!(existing.getFirstName().equals(command.getClientFirstName())
+                        && existing.getLastName().equals(command.getClientLastName()))) {
                     Map<String, Object> detail = new HashMap<>();
                     detail.put("existingClient", clientSummary(existing));
                     WarningException warning = new WarningException(
@@ -112,8 +110,8 @@ public class CasePlanService {
                         throw warning;
                     }
                     warnings.add(warning);
-                    client = existing;
                 }
+                client = existing;
             } else {
                 client = resolveClientByName(command, warnings);
             }

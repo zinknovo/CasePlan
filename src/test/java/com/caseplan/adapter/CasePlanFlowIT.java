@@ -162,6 +162,7 @@ public class CasePlanFlowIT {
     }
 
     /** Stale processing records should be reset to pending and pushed back to queue. */
+    //noinspection SqlResolve — raw SQL against dev_caseplans; IDE has no schema loaded for its columns
     @Test
     public void recoverStaleProcessing_requeuesOldProcessingPlan() throws Exception {
         long planId = createProcessingCasePlanDirectly();

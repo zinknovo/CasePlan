@@ -131,15 +131,6 @@ public final class CloudWatchEmf {
         return new MetricRecord();
     }
 
-    private static class MetricEntry {
-        final String name;
-        final double value;
-        final String unit;
-
-        MetricEntry(String name, double value, String unit) {
-            this.name = name;
-            this.value = value;
-            this.unit = unit;
-        }
+    private record MetricEntry(String name, double value, String unit) {
     }
 }
