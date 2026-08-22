@@ -36,6 +36,7 @@ crash.log
 crash.*.log
 
 # Process / temporary docs (do not track)
+项目手册/
 docker-images-summary.md
 *-summary.md
 *-plan.md
