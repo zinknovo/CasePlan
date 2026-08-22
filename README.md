@@ -73,7 +73,7 @@ src/main/java/com/caseplan
     out/
       persistence/# JPA repositories
       queue/      # Redis/SQS adapters
-      llm/        # OpenAI/Claude adapters
+      llm/        # OpenAI/Anthropic adapters
   application/
     service/      # Use-case services
     port/         # Inbound/outbound ports
@@ -148,7 +148,7 @@ Local default URL: `jdbc:postgresql://localhost:5433/dev_db`
 
 ### LLM
 
-- `LLM_PROVIDER`: `openai` or `claude`
+- `LLM_PROVIDER`: `openai`, `anthropic` or `mock` (mock returns canned text, no API calls — for load tests/demos)
 - `LLM_OPENAI_API_KEY` / `DEEPSEEK_API_KEY`
 - `LLM_OPENAI_BASE_URL` (defaults to `https://api.deepseek.com`)
 - `LLM_OPENAI_MODEL` (defaults to `deepseek-v4-flash`; use `deepseek-v4-pro` for stronger reasoning)

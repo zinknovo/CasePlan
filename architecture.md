@@ -42,7 +42,7 @@ Clients
       +--------------------------+
       | adapter/out              |
       | - queue: Redis/SQS       |
-      | - llm: OpenAI/Claude     |
+      | - llm: OpenAI/Anthropic     |
       +--------------------------+
 
 API Gateway POST /orders
@@ -106,7 +106,7 @@ API Gateway GET /orders/{id}
 | Port | Implementation | Purpose |
 |---|---|---|
 | `application.port.out.QueuePort` | `RedisQueueAdapter`, `SqsQueueAdapter` | enqueue async plan generation |
-| `application.port.out.LLMService` | `OpenAIService`, `ClaudeService` | generate case plan text |
+| `application.port.out.LLMService` | `OpenAIService`, `AnthropicService`, `MockLLMService` | generate case plan text |
 
 Persistence uses Spring Data repositories in `adapter/out/persistence/*` against PostgreSQL.
 
@@ -155,7 +155,7 @@ From `application.yaml` / Lambda env:
 - `queue.provider=redis|sqs`
 - `queue.sqs.queue-url`
 - `spring.datasource.*`
-- `llm.provider=openai|claude`
+- `llm.provider=openai|anthropic|mock`
 - provider-specific API key/base-url/model vars
 
 ## Validation and Testing

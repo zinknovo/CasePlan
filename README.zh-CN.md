@@ -73,7 +73,7 @@ src/main/java/com/caseplan
     out/
       persistence/# JPA 持久层
       queue/      # Redis/SQS 队列适配器
-      llm/        # OpenAI/Claude LLM 适配器
+      llm/        # OpenAI/Anthropic LLM 适配器
   application/
     service/      # 用例服务
     port/         # 入站/出站端口
@@ -147,7 +147,7 @@ docker compose up --build
 
 ### LLM
 
-- `LLM_PROVIDER`：`openai` 或 `claude`
+- `LLM_PROVIDER`：`openai`、`anthropic` 或 `mock`（mock 返回固定文本、不调 API，用于压测/演示）
 - `LLM_OPENAI_API_KEY` / `DEEPSEEK_API_KEY`
 - `LLM_OPENAI_BASE_URL`（默认 `https://api.deepseek.com`）
 - `LLM_OPENAI_MODEL`（默认 `deepseek-v4-flash`；需要更强推理可设为 `deepseek-v4-pro`）

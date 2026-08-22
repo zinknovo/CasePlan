@@ -210,4 +210,84 @@ public class OpenAIServiceTest {
         responseBody.put("choices", Collections.singletonList(choice));
         return responseBody;
     }
+
+    @SuppressWarnings("unchecked")
+    @Test(expected = IllegalStateException.class)
+    public void chat_responseWithoutChoicesKey_throws() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(), any(ParameterizedTypeReference.class)))
+                .thenReturn(new ResponseEntity<>(new HashMap<>(), HttpStatus.OK));
+
+        service.chat("Hi");
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void chat_deepSeekV4_explicitThinkingAndReasoningEffortSent() {
+        service = new OpenAIService(
+                restTemplate, "https://api.deepseek.com", "test-key", "deepseek-v4-pro", "enabled", "high", 86400, 4096);
+        when(restTemplate.exchange(
+                eq("https://api.deepseek.com/chat/completions"),
+                eq(HttpMethod.POST),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenReturn(new ResponseEntity<>(chatResponse(), HttpStatus.OK));
+
+        service.chat("Hi");
+
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
+
+        Map<String, Object> body = (Map<String, Object>) captor.getValue().getBody();
+        assertNotNull(body);
+        Map<String, Object> thinking = (Map<String, Object>) body.get("thinking");
+        assertEquals("enabled", thinking.get("type"));
+        assertEquals("high", body.get("reasoning_effort"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void chat_noConfiguredModel_resolvesNewestFromModelsApi() {
+        OpenAIService autoService = new OpenAIService(restTemplate, "https://api.example.com/v1", "test-key", "", "", "", 86400, 4096);
+        mockModelsResponse(Arrays.asList(modelRow("gpt-old", 1000000000), modelRow("gpt-new", 2000000000)));
+        mockChatResponse("response");
+
+        autoService.chat("Hi");
+
+        ArgumentCaptor<HttpEntity<?>> captor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).exchange(
+                eq("https://api.example.com/v1/chat/completions"), eq(HttpMethod.POST), captor.capture(), any(ParameterizedTypeReference.class));
+
+        Map<String, Object> body = (Map<String, Object>) captor.getValue().getBody();
+        assertNotNull(body);
+        assertEquals("gpt-new", body.get("model"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void chat_noConfiguredModel_noModels_errorNamesTheProperty() {
+        OpenAIService autoService = new OpenAIService(restTemplate, "https://api.example.com/v1", "test-key", "", "", "", 86400, 4096);
+        mockModelsResponse(Collections.emptyList());
+
+        IllegalStateException error = assertThrows(IllegalStateException.class, () -> autoService.chat("Hi"));
+        assertTrue(error.getMessage().contains("llm.openai.model"));
+    }
+
+    @SuppressWarnings("unchecked")
+    private void mockModelsResponse(List<Map<String, Object>> models) {
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("data", models);
+        when(restTemplate.exchange(
+                eq("https://api.example.com/v1/models"),
+                eq(HttpMethod.GET),
+                any(),
+                any(ParameterizedTypeReference.class)
+        )).thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
+    }
+
+    private static Map<String, Object> modelRow(String id, long created) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("id", id);
+        row.put("created", created);
+        return row;
+    }
 }

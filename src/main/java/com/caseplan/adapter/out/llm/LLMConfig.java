@@ -9,7 +9,7 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * Configuration: registers LLM-related beans based on llm.provider.
- * openai = OpenAI-compatible, claude = Anthropic Claude.
+ * openai = OpenAI-compatible, anthropic = Anthropic Claude, mock = canned response (no API call).
  */
 @Configuration
 public class LLMConfig {
@@ -33,19 +33,23 @@ public class LLMConfig {
             @Value("${llm.openai.reasoning-effort:}") String openaiReasoningEffort,
             @Value("${llm.openai.model-refresh-seconds:2592000}") long openaiModelRefreshSeconds,
             @Value("${llm.openai.max-tokens:4000}") int openaiMaxTokens,
-            @Value("${llm.claude.api-key:}") String claudeApiKey,
-            @Value("${llm.claude.model:}") String claudeModel,
-            @Value("${llm.claude.model-refresh-seconds:2592000}") long claudeModelRefreshSeconds,
-            @Value("${llm.claude.max-tokens:4000}") int claudeMaxTokens) {
+            @Value("${llm.anthropic.api-key:}") String anthropicApiKey,
+            @Value("${llm.anthropic.model:}") String anthropicModel,
+            @Value("${llm.anthropic.model-refresh-seconds:2592000}") long anthropicModelRefreshSeconds,
+            @Value("${llm.anthropic.max-tokens:4000}") int anthropicMaxTokens) {
 
-        if ("claude".equals(provider == null ? "" : provider.trim().toLowerCase())) {
-            return new ClaudeService(
+        String normalizedProvider = provider == null ? "" : provider.trim().toLowerCase();
+        if ("anthropic".equals(normalizedProvider)) {
+            return new AnthropicService(
                     llmRestTemplate,
-                    claudeApiKey,
-                    claudeModel,
-                    claudeModelRefreshSeconds,
-                    claudeMaxTokens
+                    anthropicApiKey,
+                    anthropicModel,
+                    anthropicModelRefreshSeconds,
+                    anthropicMaxTokens
             );
+        }
+        if ("mock".equals(normalizedProvider)) {
+            return new MockLLMService();
         }
         return new OpenAIService(
                 llmRestTemplate,

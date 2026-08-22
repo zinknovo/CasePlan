@@ -31,7 +31,7 @@ queue:
     queue-url: ${QUEUE_URL:}
     region: ${AWS_REGION:us-east-2}
 
-# LLM abstraction: set llm.provider to "openai" (DeepSeek/OpenAI) or "claude"
+# LLM abstraction: set llm.provider to "openai" (DeepSeek/OpenAI), "anthropic", or "mock" (canned text, no API calls)
 llm:
   provider: ${LLM_PROVIDER:openai}
   openai:
@@ -45,11 +45,11 @@ llm:
     reasoning-effort: ${LLM_OPENAI_REASONING_EFFORT:}
     model-refresh-seconds: ${LLM_OPENAI_MODEL_REFRESH_SECONDS:2592000}
     max-tokens: 4000
-  claude:
+  anthropic:
     api-key: ${ANTHROPIC_API_KEY:}
     # Leave empty to auto-resolve latest model from /models.
-    model: ${LLM_CLAUDE_MODEL:}
-    model-refresh-seconds: ${LLM_CLAUDE_MODEL_REFRESH_SECONDS:2592000}
+    model: ${LLM_ANTHROPIC_MODEL:}
+    model-refresh-seconds: ${LLM_ANTHROPIC_MODEL_REFRESH_SECONDS:2592000}
     max-tokens: 4000
 
 # Legacy (still used if LLM_OPENAI_API_KEY not set)

@@ -1,6 +1,6 @@
 # CasePlan Monitoring Plan
 
-Architecture: Spring Boot 2.7 + PostgreSQL + Redis Queue + LLM API (DeepSeek/OpenAI/Claude)
+Architecture: Spring Boot 2.7 + PostgreSQL + Redis Queue + LLM API (DeepSeek/OpenAI/Anthropic)
 
 ## Business Metrics
 

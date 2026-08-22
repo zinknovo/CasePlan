@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Abstraction for LLM chat completion. Business code depends only on this interface;
- * the concrete provider (DeepSeek, OpenAI, Claude, local) is chosen by configuration.
+ * the concrete provider (DeepSeek, OpenAI, Anthropic, local) is chosen by configuration.
  */
 public interface LLMService {
 

@@ -1,31 +1,22 @@
 package com.caseplan.adapter.out.llm;
 
 import com.caseplan.application.port.out.ChatMessage;
-import org.springframework.http.*;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * LLM service for OpenAI-compatible APIs: OpenAI, DeepSeek, or any endpoint that follows
  * the OpenAI chat completions format (POST with messages[], returns choices[].message.content).
  */
-public class OpenAIService extends BaseLLMService {
+public class OpenAIService extends HttpLLMService {
 
-    private final RestTemplate restTemplate;
     private final String baseUrl;
-    private final String apiKey;
-    private final String configuredModel;
     private final String configuredThinkingType;
     private final String configuredReasoningEffort;
-    private final long modelRefreshSeconds;
-    private final int maxTokens;
-    private final ModelCache modelCache = new ModelCache();
 
     public OpenAIService(
             RestTemplate restTemplate,
@@ -36,62 +27,59 @@ public class OpenAIService extends BaseLLMService {
             String configuredReasoningEffort,
             long modelRefreshSeconds,
             int maxTokens) {
-        this.restTemplate = restTemplate;
+        super(restTemplate, apiKey, "llm.openai.api-key", configuredModel, modelRefreshSeconds, maxTokens);
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl : baseUrl + "/";
-        this.apiKey = apiKey;
-        this.configuredModel = configuredModel;
         this.configuredThinkingType = configuredThinkingType;
         this.configuredReasoningEffort = configuredReasoningEffort;
-        this.modelRefreshSeconds = modelRefreshSeconds;
-        this.maxTokens = maxTokens;
+    }
+
+    /** Any OpenAI-compatible endpoint can sit behind this class, so errors stay vendor-neutral. */
+    @Override
+    protected String providerLabel() {
+        return "LLM";
     }
 
     @Override
-    @SuppressWarnings("unchecked")
+    protected String modelProperty() {
+        return "llm.openai.model";
+    }
+
+    @Override
+    protected String modelsUrl() {
+        return baseUrl + "models";
+    }
+
+    @Override
+    protected String chatUrl() {
+        return baseUrl + "chat/completions";
+    }
+
+    @Override
+    protected List<String> modelTimeFields() {
+        return Arrays.asList("created", "created_at", "release_date");
+    }
+
+    @Override
+    protected void applyAuthHeaders(HttpHeaders headers) {
+        headers.setBearerAuth(requireApiKey());
+    }
+
+    @Override
     protected String doChat(List<ChatMessage> messages) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(Objects.requireNonNull(apiKey, "llm.openai.api-key is required"));
+        HttpHeaders headers = jsonHeaders();
+        String model = resolveModel(headers);
 
-        List<Map<String, String>> apiMessages = new ArrayList<>();
-        for (ChatMessage message : messages) {
-            Map<String, String> map = new HashMap<>();
-            map.put("role", message.getRole());
-            map.put("content", message.getContent());
-            apiMessages.add(map);
-        }
-
-        String model = resolveModel(
-                headers,
-                restTemplate,
-                configuredModel,
-                modelRefreshSeconds,
-                modelCache,
-                baseUrl + "models",
-                "LLM models API returned null body",
-                "LLM models API returned no models; set llm.openai.model explicitly",
-                "No valid model id from models API",
-                Arrays.asList("created", "created_at", "release_date")
-        );
-        Map<String, Object> body = new HashMap<>();
-        body.put("model", model);
-        body.put("max_tokens", maxTokens);
-        body.put("messages", apiMessages);
+        Map<String, Object> body = newChatBody(model, toApiMessages(messages));
         addDeepSeekThinkingOptions(body, model);
 
-        String url = baseUrl + "chat/completions";
-        HttpEntity<Map<String, Object>> request = new HttpEntity<>(body, headers);
-        Map<String, Object> responseBody = exchangeForMapBody(
-                restTemplate,
-                url,
-                HttpMethod.POST,
-                request,
-                "LLM API returned null body"
-        );
+        return firstChoiceContent(postChat(headers, body));
+    }
 
+    @SuppressWarnings("unchecked")
+    private String firstChoiceContent(Map<String, Object> responseBody) {
         List<Map<String, Object>> choices = (List<Map<String, Object>>) responseBody.get("choices");
         if (choices == null || choices.isEmpty()) {
-            throw new IllegalStateException("LLM API returned no choices");
+            throw new IllegalStateException(providerLabel() + " API returned no choices");
         }
 
         Map<String, Object> message = (Map<String, Object>) choices.getFirst().get("message");
@@ -121,13 +109,5 @@ public class OpenAIService extends BaseLLMService {
 
     private boolean isDeepSeekBaseUrl() {
         return baseUrl.contains("api.deepseek.com");
-    }
-
-    private String trimToNull(String value) {
-        if (value == null) {
-            return null;
-        }
-        String trimmed = value.trim();
-        return trimmed.isEmpty() ? null : trimmed;
     }
 }
