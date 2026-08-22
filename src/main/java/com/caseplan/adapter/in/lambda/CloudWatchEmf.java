@@ -105,12 +105,12 @@ public final class CloudWatchEmf {
                 // Additional properties
                 for (Map.Entry<String, Object> prop : properties.entrySet()) {
                     Object v = prop.getValue();
-                    if (v instanceof String) {
-                        root.put(prop.getKey(), (String) v);
-                    } else if (v instanceof Number) {
-                        root.put(prop.getKey(), ((Number) v).doubleValue());
-                    } else if (v instanceof Boolean) {
-                        root.put(prop.getKey(), (Boolean) v);
+                    if (v instanceof String s) {
+                        root.put(prop.getKey(), s);
+                    } else if (v instanceof Number number) {
+                        root.put(prop.getKey(), number.doubleValue());
+                    } else if (v instanceof Boolean b) {
+                        root.put(prop.getKey(), b);
                     } else if (v != null) {
                         root.put(prop.getKey(), v.toString());
                     }

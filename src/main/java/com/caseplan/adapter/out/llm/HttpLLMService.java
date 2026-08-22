@@ -244,8 +244,8 @@ public abstract class HttpLLMService extends BaseLLMService {
         if (value == null) {
             return Long.MIN_VALUE;
         }
-        if (value instanceof Number) {
-            long ts = ((Number) value).longValue();
+        if (value instanceof Number number) {
+            long ts = number.longValue();
             return ts < 1_000_000_000_000L ? ts * 1000L : ts;
         }
         String text = value.toString().trim();

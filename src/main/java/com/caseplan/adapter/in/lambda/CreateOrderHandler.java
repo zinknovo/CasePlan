@@ -108,8 +108,8 @@ public class CreateOrderHandler implements RequestHandler<APIGatewayProxyRequest
         if (body == null) {
             return null;
         }
-        if (body instanceof CasePlan) {
-            return ((CasePlan) body).getId();
+        if (body instanceof CasePlan casePlan) {
+            return casePlan.getId();
         }
 
         Map<String, Object> map = MAPPER.convertValue(body, new TypeReference<>() {});
@@ -128,8 +128,8 @@ public class CreateOrderHandler implements RequestHandler<APIGatewayProxyRequest
         if (value == null) {
             return null;
         }
-        if (value instanceof Number) {
-            return ((Number) value).longValue();
+        if (value instanceof Number number) {
+            return number.longValue();
         }
         try {
             return Long.parseLong(String.valueOf(value));
